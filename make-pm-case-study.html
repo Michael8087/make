@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Automation Control Plane — Make PM Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --purple: #6C2BD9;
+    --purple-light: #8B5CF6;
+    --purple-lighter: #A78BFA;
+    --purple-dark: #4C1D95;
+    --purple-bg: #F5F3FF;
+    --purple-bg2: #EDE9FE;
+    --purple-border: #DDD6FE;
+    --text-primary: #0F0F11;
+    --text-secondary: #6B7280;
+    --text-tertiary: #9CA3AF;
+    --border: #E5E7EB;
+    --border-light: #F3F4F6;
+    --surface: #FAFAFA;
+    --white: #FFFFFF;
+    --green: #10B981;
+    --amber: #F59E0B;
+    --red: #EF4444;
+    --blue: #3B82F6;
+    --sidebar-w: 260px;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 16px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.04);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.10), 0 4px 12px rgba(0,0,0,.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--white);
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-size: 17px;
+    display: flex;
+  }
+
+  /* ─── SIDEBAR ─── */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    position: fixed;
+    top: 0; left: 0;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 100;
+    padding: 0 0 40px;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 20px 16px;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 8px;
+  }
+  .sidebar-logo .logo-mark { display: flex; align-items: center; }
+  .sidebar-logo .logo-mark img { height: 22px; width: auto; display: block; }
+  .sidebar-logo .logo-text {
+    font-weight: 800; font-size: 17px; color: var(--text-primary);
+    letter-spacing: -.03em; line-height: 1;
+  }
+  .sidebar-meta { padding: 0 20px 12px; font-size: 11px; font-weight: 500; letter-spacing: .06em; color: var(--text-tertiary); text-transform: uppercase; }
+  .nav-section { margin-bottom: 4px; }
+  .nav-section-label { padding: 8px 20px 4px; font-size: 10px; font-weight: 600; letter-spacing: .08em; color: var(--text-tertiary); text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 20px;
+    font-size: 13px; font-weight: 450;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all .15s;
+    text-decoration: none;
+  }
+  .nav-item:hover { color: var(--purple); background: var(--purple-bg); }
+  .nav-item.active { color: var(--purple); background: var(--purple-bg); border-left-color: var(--purple); font-weight: 500; }
+  .nav-item .nav-num { font-size: 11px; color: var(--text-tertiary); min-width: 18px; font-variant-numeric: tabular-nums; }
+
+  /* ─── MAIN CONTENT ─── */
+  #main {
+    margin-left: var(--sidebar-w);
+    width: calc(100% - var(--sidebar-w));
+    min-height: 100vh;
+  }
+
+  /* ─── SECTIONS ─── */
+  .section {
+    padding: 96px 80px;
+    border-bottom: 1px solid var(--border-light);
+    position: relative;
+  }
+  .section:nth-child(even) { background: var(--white); }
+  .section:nth-child(odd) { background: #FCFCFC; }
+
+  /* ─── HERO ─── */
+  #hero {
+    min-height: 88vh;
+    background: linear-gradient(135deg, #0A0614 0%, #1E0A4C 40%, #2D1070 70%, #1A0A35 100%);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 80px 80px 80px;
+    border-bottom: none;
+    position: relative;
+    overflow: hidden;
+  }
+  #hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 60% 40%, rgba(108,43,217,.35) 0%, transparent 70%);
+  }
+  #hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236C2BD9' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 820px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(108,43,217,.25); border: 1px solid rgba(139,92,246,.35);
+    padding: 6px 14px; border-radius: 100px;
+    font-size: 12px; font-weight: 600; color: var(--purple-lighter);
+    letter-spacing: .05em; text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .hero-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--purple-lighter); }
+  .hero-title {
+    font-size: clamp(42px, 5vw, 68px);
+    font-weight: 800;
+    line-height: 1.08;
+    color: #FFFFFF;
+    letter-spacing: -.03em;
+    margin-bottom: 24px;
+  }
+  .hero-title .accent { color: var(--purple-lighter); }
+  .hero-subtitle {
+    font-size: 23px; font-weight: 400; color: rgba(255,255,255,.65);
+    line-height: 1.6; max-width: 640px; margin-bottom: 48px;
+  }
+  .hero-meta {
+    display: flex; gap: 32px; align-items: center;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item { font-size: 13px; color: rgba(255,255,255,.45); }
+  .hero-meta-item strong { color: rgba(255,255,255,.8); font-weight: 500; }
+  .hero-divider { width: 1px; height: 24px; background: rgba(255,255,255,.15); }
+  .hero-scroll {
+    position: absolute; bottom: 36px; left: 80px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: rgba(255,255,255,.35); font-weight: 500;
+  }
+
+  /* ─── SECTION HEADERS ─── */
+  .section-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--purple); margin-bottom: 16px;
+  }
+  .section-label::before { content: ''; display: block; width: 20px; height: 2px; background: var(--purple); border-radius: 2px; }
+  h2.section-title {
+    font-size: clamp(34px, 4vw, 54px);
+    font-weight: 800; letter-spacing: -.025em;
+    line-height: 1.12; color: var(--text-primary);
+    margin-bottom: 16px;
+  }
+  h2.section-title .accent { color: var(--purple); }
+  .section-subtitle {
+    font-size: 21px; color: var(--text-secondary);
+    line-height: 1.65; max-width: 720px; margin-bottom: 56px;
+    font-weight: 400;
+  }
+  h3.card-title { font-size: 19px; font-weight: 650; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -.01em; }
+
+  /* ─── GRID LAYOUTS ─── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow .2s, transform .2s;
+  }
+  .card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .card.purple-card {
+    background: linear-gradient(135deg, var(--purple) 0%, #4C1D95 100%);
+    border-color: transparent; color: white;
+  }
+  .card.purple-card h3 { color: white; }
+  .card.purple-card p { color: rgba(255,255,255,.75); }
+  .card.subtle { background: var(--surface); border-color: var(--border-light); }
+  .card-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--purple-bg); display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .card-icon svg { width: 22px; height: 22px; color: var(--purple); }
+  .card p { font-size: 16px; color: var(--text-secondary); line-height: 1.65; }
+
+  /* ─── STAT CARDS ─── */
+  .stat-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px 28px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-label { font-size: 12px; font-weight: 600; color: var(--text-tertiary); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-size: 36px; font-weight: 800; color: var(--text-primary); letter-spacing: -.03em; line-height: 1; margin-bottom: 6px; }
+  .stat-value .unit { font-size: 20px; font-weight: 600; color: var(--text-secondary); }
+  .stat-change { font-size: 13px; color: var(--green); font-weight: 500; }
+  .stat-change.neutral { color: var(--text-secondary); }
+
+  /* ─── PERSONA CARDS ─── */
+  .persona-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 32px;
+    box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+  }
+  .persona-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  }
+  .persona-card.cio::before { background: linear-gradient(90deg, #6C2BD9, #8B5CF6); }
+  .persona-card.admin::before { background: linear-gradient(90deg, #3B82F6, #60A5FA); }
+  .persona-card.lead::before { background: linear-gradient(90deg, #10B981, #34D399); }
+  .persona-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 16px;
+  }
+  .persona-card.cio .persona-avatar { background: var(--purple-bg); }
+  .persona-card.admin .persona-avatar { background: #EFF6FF; }
+  .persona-card.lead .persona-avatar { background: #ECFDF5; }
+  .persona-role { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; color: var(--text-tertiary); }
+  .persona-name { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+  .persona-goal { font-size: 16px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; }
+  .persona-needs { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .persona-need {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 15px; color: var(--text-primary);
+  }
+  .persona-need::before { content: '→'; color: var(--purple); font-weight: 700; flex-shrink: 0; }
+
+  /* ─── QUOTE CARDS ─── */
+  .quote-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 28px;
+    box-shadow: var(--shadow-sm); position: relative;
+  }
+  .quote-card::before {
+    content: '"'; position: absolute; top: 16px; right: 24px;
+    font-size: 72px; line-height: 1; color: var(--purple-bg2);
+    font-family: Georgia, serif; font-weight: 700;
+  }
+  .quote-text { font-size: 17px; color: var(--text-primary); line-height: 1.7; margin-bottom: 16px; font-style: italic; }
+  .quote-source { font-size: 14px; color: var(--text-tertiary); font-weight: 500; }
+  .quote-source strong { color: var(--purple); font-weight: 600; }
+  .quote-insight {
+    margin-top: 14px; padding: 12px 14px;
+    background: var(--purple-bg); border-radius: 8px;
+    font-size: 14px; color: var(--purple-dark); font-weight: 500; line-height: 1.6;
+  }
+  .quote-insight strong { color: var(--purple); }
+
+  /* ─── MAKE UI MOCKUPS ─── */
+  .make-window {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .make-topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; background: var(--white);
+    border-bottom: 1px solid var(--border);
+  }
+  .make-dots { display: flex; gap: 6px; }
+  .make-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .make-dot.r { background: #FF5F57; }
+  .make-dot.y { background: #FEBC2E; }
+  .make-dot.g { background: #28C840; }
+  .make-topbar-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-left: 8px; }
+  .make-sidebar-nav {
+    width: 200px; min-height: 400px; background: #FAFAFA;
+    border-right: 1px solid var(--border); padding: 16px 0;
+    flex-shrink: 0;
+  }
+  .make-nav-item {
+    padding: 8px 16px; font-size: 13px; color: var(--text-secondary);
+    cursor: pointer; display: flex; align-items: center; gap: 10px;
+    border-left: 2px solid transparent;
+  }
+  .make-nav-item.active { color: var(--purple); background: var(--purple-bg); border-left-color: var(--purple); font-weight: 500; }
+  .make-nav-item svg { width: 15px; height: 15px; opacity: .6; flex-shrink: 0; }
+  .make-nav-item.active svg { opacity: 1; color: var(--purple); }
+  .make-content-area { flex: 1; padding: 24px; overflow: hidden; }
+  .make-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .make-page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+  .make-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+  }
+  .make-btn-primary { background: var(--purple); color: white; }
+  .make-btn-secondary { background: var(--white); color: var(--text-primary); border: 1px solid var(--border); }
+  .make-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .make-table th {
+    text-align: left; padding: 8px 12px;
+    font-size: 12px; font-weight: 600; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: .06em;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .make-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); vertical-align: middle; }
+  .make-table tr:hover td { background: var(--purple-bg); }
+  .make-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 600;
+  }
+  .make-badge.green { background: #ECFDF5; color: #065F46; }
+  .make-badge.red { background: #FEF2F2; color: #991B1B; }
+  .make-badge.amber { background: #FFFBEB; color: #92400E; }
+  .make-badge.purple { background: var(--purple-bg); color: var(--purple-dark); }
+  .make-badge.blue { background: #EFF6FF; color: #1D4ED8; }
+  .make-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* ─── FLOW DIAGRAM ─── */
+  .flow-step {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1;
+  }
+  .flow-node {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 20px;
+    text-align: center; width: 100%; box-shadow: var(--shadow-sm);
+    transition: all .2s;
+  }
+  .flow-node.active { border-color: var(--purple); background: var(--purple-bg); box-shadow: 0 0 0 3px var(--purple-bg2); }
+  .flow-node.future { border-color: var(--purple); background: linear-gradient(135deg, var(--purple), #4C1D95); color: white; }
+  .flow-node-label { font-size: 15px; font-weight: 600; }
+  .flow-node-sub { font-size: 13px; color: var(--text-tertiary); margin-top: 3px; }
+  .flow-node.future .flow-node-sub { color: rgba(255,255,255,.65); }
+  .flow-arrow { font-size: 18px; color: var(--text-tertiary); margin: 4px 0; }
+  .flow-container { display: flex; align-items: stretch; gap: 0; }
+  .flow-connector {
+    display: flex; align-items: center; padding: 0 8px;
+    color: var(--text-tertiary); font-size: 20px; flex-shrink: 0;
+  }
+
+  /* ─── TIMELINE ─── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .timeline-item { display: flex; gap: 24px; padding-bottom: 40px; position: relative; }
+  .timeline-item::before { content: ''; position: absolute; left: 19px; top: 40px; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-item:last-child::before { display: none; }
+  .timeline-dot {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; z-index: 1;
+  }
+  .timeline-dot.phase1 { background: var(--purple); color: white; }
+  .timeline-dot.phase2 { background: var(--blue); color: white; }
+  .timeline-dot.phase3 { background: var(--green); color: white; }
+  .timeline-content { flex: 1; padding-top: 8px; }
+  .timeline-phase { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--purple); margin-bottom: 4px; }
+  .timeline-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+  .timeline-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px; }
+  .timeline-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 500;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary);
+  }
+  .chip.purple { background: var(--purple-bg); border-color: var(--purple-border); color: var(--purple-dark); }
+
+  /* ─── CHART WRAPPERS ─── */
+  .chart-container { position: relative; }
+  .chart-wrapper { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-sm); }
+  .chart-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 12px; color: var(--text-tertiary); margin-bottom: 20px; }
+
+  /* ─── CALLOUT ─── */
+  .callout {
+    border-radius: var(--radius-lg); padding: 28px 32px;
+    display: flex; gap: 20px; align-items: flex-start;
+  }
+  .callout.purple { background: var(--purple-bg); border: 1px solid var(--purple-border); }
+  .callout.dark { background: #0F0F11; color: white; border: none; }
+  .callout-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+  .callout-content h4 { font-size: 19px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+  .callout.dark .callout-content h4 { color: white; }
+  .callout-content p { font-size: 16px; line-height: 1.7; color: var(--text-secondary); }
+  .callout.dark .callout-content p { color: rgba(255,255,255,.65); }
+  .callout.purple .callout-content h4 { color: var(--purple-dark); }
+  .callout.purple .callout-content p { color: var(--purple-dark); }
+
+  /* ─── COMPARISON TABLE ─── */
+  .comparison-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .comparison-col { padding: 32px; }
+  .comparison-col.current { background: var(--surface); }
+  .comparison-col.future { background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); border-left: 1px solid var(--purple-border); }
+  .comparison-col-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 20px; }
+  .comparison-col.current .comparison-col-label { color: var(--text-tertiary); }
+  .comparison-col.future .comparison-col-label { color: var(--purple); }
+  .comparison-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; font-size: 14px; color: var(--text-primary); }
+  .comparison-item.has { color: var(--text-primary); }
+  .comparison-item.missing { color: var(--text-tertiary); }
+  .ci-icon { flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-top: 2px; }
+  .has .ci-icon { background: #ECFDF5; color: #065F46; }
+  .missing .ci-icon { background: #FEF2F2; color: #991B1B; }
+  .gained .ci-icon { background: var(--purple-bg); color: var(--purple); }
+
+  /* ─── METRIC GRID ─── */
+  .metric-block { padding: 20px; border-radius: var(--radius); background: var(--white); border: 1px solid var(--border); }
+  .metric-name { font-size: 12px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .metric-val { font-size: 28px; font-weight: 800; color: var(--text-primary); letter-spacing: -.02em; margin-bottom: 4px; }
+  .metric-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* ─── RISK TABLE ─── */
+  .risk-table { width: 100%; border-collapse: collapse; }
+  .risk-table th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-tertiary); border-bottom: 2px solid var(--border); }
+  .risk-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-light); font-size: 13px; color: var(--text-secondary); vertical-align: top; }
+  .risk-table td:first-child { font-weight: 600; color: var(--text-primary); width: 22%; }
+  .severity { display: inline-flex; padding: 2px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; }
+  .sev-high { background: #FEF2F2; color: #991B1B; }
+  .sev-med { background: #FFFBEB; color: #92400E; }
+  .sev-low { background: #ECFDF5; color: #065F46; }
+
+  /* ─── REFERENCES ─── */
+  .ref-item { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; background: var(--white); }
+  .ref-title { font-size: 14px; font-weight: 600; color: var(--purple); margin-bottom: 4px; }
+  .ref-url { font-size: 12px; color: var(--text-tertiary); font-family: monospace; margin-bottom: 6px; word-break: break-all; }
+  .ref-url a { color: var(--purple); text-decoration: none; }
+  .ref-url a:hover { text-decoration: underline; }
+  .ref-takeaway { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* ─── CLOSING ─── */
+  #closing {
+    background: linear-gradient(135deg, #0F0614 0%, #1E0A4C 50%, #0F0F11 100%);
+    color: white; text-align: center; padding: 120px 80px;
+    border-bottom: none;
+  }
+  #closing h2 { font-size: clamp(28px, 3vw, 42px); font-weight: 800; line-height: 1.2; letter-spacing: -.025em; color: white; max-width: 720px; margin: 0 auto 24px; }
+  #closing p { font-size: 18px; color: rgba(255,255,255,.6); max-width: 600px; margin: 0 auto; line-height: 1.7; }
+  #closing .accent { color: var(--purple-lighter); }
+
+  /* ─── APPENDIX QUOTE ─── */
+  .appendix-quote { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; border-left: 3px solid var(--purple); }
+  .appendix-q-text { font-size: 14px; font-style: italic; color: var(--text-primary); line-height: 1.7; margin-bottom: 12px; }
+  .appendix-q-meta { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; }
+  .appendix-q-meta strong { color: var(--purple); }
+  .appendix-q-interp { font-size: 12px; color: var(--text-secondary); line-height: 1.5; background: var(--surface); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+  .appendix-q-impl { font-size: 12px; color: var(--purple-dark); line-height: 1.5; background: var(--purple-bg); border-radius: 6px; padding: 10px 12px; font-weight: 500; }
+
+  /* ─── MISC ─── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .text-purple { color: var(--purple); }
+  .text-muted { color: var(--text-secondary); font-size: 14px; }
+  .highlight-box { background: linear-gradient(135deg, var(--purple-bg) 0%, var(--purple-bg2) 100%); border: 1px solid var(--purple-border); border-radius: var(--radius-lg); padding: 32px; }
+  .pill { display: inline-flex; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+  .spacer-sm { height: 16px; } .spacer { height: 32px; } .spacer-lg { height: 56px; }
+  strong { font-weight: 650; }
+  p { line-height: 1.7; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════ SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <img
+        src="https://images.ctfassets.net/un655fb9wln6/5drzJqeJykwoS5uqQRr4in/6a1e399130f279aee935213d5df437a5/Copy_of_Logo-RGB-Color_2x.png"
+        alt="Make"
+        onerror="this.style.display='none'; document.querySelector('.logo-text').style.display='block';"
+      />
+    </div>
+    <div class="logo-text" style="display:none;">Make</div>
+  </div>
+  <div class="sidebar-meta">PM Case Study</div>
+
+  <div class="nav-section">
+    <a class="nav-item active" href="#hero"><span class="nav-num">00</span> Overview</a>
+    <a class="nav-item" href="#context"><span class="nav-num">01</span> Context</a>
+    <a class="nav-item" href="#market-shift"><span class="nav-num">02</span> Market Shift</a>
+    <a class="nav-item" href="#why-now"><span class="nav-num">03</span> Why This Matters Now</a>
+    <a class="nav-item" href="#personas"><span class="nav-num">04</span> Personas</a>
+    <a class="nav-item" href="#research"><span class="nav-num">05</span> Customer Research</a>
+    <a class="nav-item" href="#community"><span class="nav-num">05b</span> Community Validation</a>
+    <a class="nav-item" href="#capabilities"><span class="nav-num">06</span> Existing Capabilities</a>
+    <a class="nav-item" href="#gap"><span class="nav-num">07</span> Gap Analysis</a>
+    <a class="nav-item" href="#problem"><span class="nav-num">08</span> Problem Statement</a>
+    <a class="nav-item" href="#solution"><span class="nav-num">09</span> Solution</a>
+    <a class="nav-item" href="#ux"><span class="nav-num">10</span> User Experience</a>
+    <a class="nav-item" href="#metrics"><span class="nav-num">11</span> Success Metrics</a>
+    <a class="nav-item" href="#roadmap"><span class="nav-num">12</span> Roadmap</a>
+    <a class="nav-item" href="#references"><span class="nav-num">Ref</span> References</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════ MAIN -->
+<main id="main">
+
+<!-- ═══ HERO ═══ -->
+<section id="hero" class="section">
+  <div class="hero-content">
+    <div class="hero-badge">Product Management Case Study</div>
+    <h1 class="hero-title">Enterprise<br><span class="accent">Automation</span><br>Control Plane</h1>
+    <p class="hero-subtitle">As Make scales from workflow builder to enterprise automation platform, the challenge shifts from building automations to managing automation portfolios.</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><strong>Platform</strong><br>Make.com</div>
+      <div class="hero-divider"></div>
+      <div class="hero-meta-item"><strong>Audience</strong><br>PM Interview Panel</div>
+      <div class="hero-divider"></div>
+      <div class="hero-meta-item"><strong>Focus</strong><br>Portfolio Visibility at Scale</div>
+      <div class="hero-divider"></div>
+      <div class="hero-meta-item"><strong>Scope</strong><br>Subfolders + Custom Analytics</div>
+    </div>
+  </div>
+  <div class="hero-scroll">↓ Scroll to explore</div>
+</section>
+
+<!-- ═══ 01 CONTEXT ═══ -->
+<section id="context" class="section">
+  <div class="section-label">01 — Context</div>
+  <h2 class="section-title">Make has crossed the<br><span class="accent">enterprise threshold</span></h2>
+  <p class="section-subtitle">Make started as a visual integration builder. For many enterprise customers, it has since become the connective tissue of their automation programs — running revenue-critical workflows across teams and functions.</p>
+
+  <div class="grid-4" style="margin-bottom:40px;">
+    <div class="stat-card">
+      <div class="stat-label">Scenarios at Scale</div>
+      <div class="stat-value" style="font-size:22px;white-space:nowrap;">100s–1,000s</div>
+      <div class="stat-change neutral">Per enterprise org</div>
+      <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px;line-height:1.5;">Exact numbers vary widely — what matters is that at this volume, manual oversight breaks down</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Teams Operating</div>
+      <div class="stat-value" style="font-size:22px;white-space:nowrap;">10s</div>
+      <div class="stat-change neutral">Across functions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Workflow Type</div>
+      <div class="stat-value" style="font-size:22px;white-space:nowrap;">Business Critical</div>
+      <div class="stat-change neutral">Revenue-impacting</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">AI Automations</div>
+      <div class="stat-value" style="font-size:22px;white-space:nowrap;">Growing</div>
+      <div class="stat-change neutral">Agentic workloads ↑</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:32px;">
+    <div>
+      <h3 class="card-title" style="font-size:19px;margin-bottom:16px;">The assignment</h3>
+      <p style="font-size:17px;color:var(--text-secondary);line-height:1.75;margin-bottom:20px;">
+        Identify <strong>one critical friction point</strong> preventing large organizations from running business-critical workflows with confidence on Make.
+      </p>
+      <p style="font-size:17px;color:var(--text-secondary);line-height:1.75;margin-bottom:20px;">
+        Enterprise customers now operate complex automation ecosystems — hundreds or thousands of scenarios, AI agents, cross-functional programs. The scale they've reached looks very different from the "connect two apps" use case Make was originally built around.
+      </p>
+      <p style="font-size:17px;color:var(--text-secondary);line-height:1.75;">
+        At that scale, a new class of challenge emerges. And it's not about building more automations.
+      </p>
+    </div>
+    <div>
+      <div class="highlight-box">
+        <div class="section-label" style="margin-bottom:12px;">Core Insight</div>
+        <p style="font-size:18px;font-weight:700;color:var(--purple-dark);line-height:1.5;margin-bottom:16px;">"As Make scales from workflow builder to enterprise automation platform, the challenge shifts from <em>building</em> automations to <em>managing</em> automation portfolios."</p>
+        <p style="font-size:17px;color:var(--text-secondary);line-height:1.6;">This single observation frames the case study. The challenge isn't whether individual automations work — it's whether the organization can understand and manage them as a whole.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 MARKET SHIFT ═══ -->
+<section id="market-shift" class="section">
+  <div class="section-label">02 — Market Shift</div>
+  <h2 class="section-title">iPaaS is becoming<br><span class="accent">something bigger</span></h2>
+  <p class="section-subtitle">The market is no longer buying integration tools. It is buying enterprise automation control planes — platforms that provide operational confidence at scale.</p>
+
+  <div style="margin-bottom:48px;">
+    <div class="flow-container" style="align-items:center;gap:0;">
+      <div class="flow-step">
+        <div class="flow-node">
+          <div class="flow-node-label">Connect Systems</div>
+          <div class="flow-node-sub">Point-to-point integrations<br>API glue code</div>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;">Early iPaaS · 2015–2020</div>
+      </div>
+      <div class="flow-connector">→</div>
+      <div class="flow-step">
+        <div class="flow-node active">
+          <div class="flow-node-label" style="color:var(--purple);">Manage Automation Ecosystems</div>
+          <div class="flow-node-sub">Visual workflow builders<br>No-code / low-code</div>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:.05em;">Make Today · 2021–2024</div>
+      </div>
+      <div class="flow-connector">→</div>
+      <div class="flow-step">
+        <div class="flow-node future">
+          <div class="flow-node-label">Orchestrate AI + Automation</div>
+          <div class="flow-node-sub" style="color:rgba(255,255,255,.65);">Portfolio management<br>Operational control plane</div>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:var(--purple-lighter);text-transform:uppercase;letter-spacing:.05em;">Emerging Market · 2025+</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:40px;">
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+      <h3 class="card-title">From Connectors to Control</h3>
+      <p>The future platform winner is not just the one with the most connectors. Enterprises increasingly expect <strong>operational confidence</strong> at scale — governance, visibility, and accountability as first-class capabilities.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+      <h3 class="card-title">Enterprise Orchestration</h3>
+      <p>Analyst research identifies the emerging category as <strong>enterprise orchestration systems</strong> — not automation canvases. The distinction matters: buyers are now looking for a platform to run their automation program, not just build workflows.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/><path d="M5 5l1.5 1.5M19 5l-1.5 1.5M5 19l1.5-1.5M19 19l-1.5-1.5" stroke-linecap="round"/></svg></div>
+      <h3 class="card-title">AI Adds Urgency</h3>
+      <p>As AI agents become part of automation portfolios, the need for a control plane intensifies. <strong>Nondeterministic AI flows</strong> running alongside deterministic automations require clearer visibility, not less.</p>
+    </div>
+  </div>
+
+  <div class="callout dark">
+    <div class="callout-icon">📡</div>
+    <div class="callout-content">
+      <h4>The Market Signal</h4>
+      <p>Gartner and Forrester both identify "business process orchestration" and "automation governance" as the fastest-growing enterprise requirements in the iPaaS space. Vendors who deliver on operational confidence — not just workflow creation — will define the next generation of the category.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 WHY NOW ═══ -->
+<section id="why-now" class="section">
+  <div class="section-label">03 — Why This Matters Now</div>
+  <h2 class="section-title">The window to own<br><span class="accent">enterprise confidence</span> is open</h2>
+  <p class="section-subtitle">Automation adoption is accelerating. The bottleneck is no longer creation — it is management. The platform that solves this first wins enterprise retention.</p>
+
+  <div class="grid-2" style="gap:32px;margin-bottom:48px;">
+    <div>
+      <h3 class="card-title" style="font-size:19px;margin-bottom:20px;">The challenge is shifting</h3>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="width:32px;height:32px;border-radius:8px;background:#ECFDF5;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">✓</div>
+          <div>
+            <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:2px;">Workflow Creation — Solved</div>
+            <div style="font-size:16px;color:var(--text-secondary);">Make's visual builder is best-in-class. Teams can create sophisticated automations without code. This is no longer the bottleneck.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="width:32px;height:32px;border-radius:8px;background:#ECFDF5;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">✓</div>
+          <div>
+            <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:2px;">Connector Breadth — Solved</div>
+            <div style="font-size:16px;color:var(--text-secondary);">3,000+ native integrations. If it has an API, Make can connect it. But connector breadth is increasingly table stakes — it's necessary, not sufficient.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="width:32px;height:32px;border-radius:8px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">✗</div>
+          <div>
+            <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:2px;">Portfolio Visibility — Unsolved</div>
+            <div style="font-size:16px;color:var(--text-secondary);">As portfolios grow to hundreds of scenarios across dozens of teams, enterprises cannot understand their automation program through the lens of their business structure.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="width:32px;height:32px;border-radius:8px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">✗</div>
+          <div>
+            <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:2px;">Operational Governance — Unsolved</div>
+            <div style="font-size:16px;color:var(--text-secondary);">CIOs cannot run executive reviews. Admins can filter scenarios by criticality in the Scenarios list — but that view doesn't exist in Analytics or Dashboards, which is where portfolio decisions get made. Finance cannot track automation ROI without exporting data out of Make.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 class="card-title" style="font-size:19px;margin-bottom:20px;">Why enterprises are at risk</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="card subtle" style="padding:20px;">
+          <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">🔍 Visibility Gap</div>
+          <div style="font-size:16px;color:var(--text-secondary);">No way to answer "How many of our business-critical workflows are currently failing?" without manually inspecting each one.</div>
+        </div>
+        <div class="card subtle" style="padding:20px;">
+          <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">📊 Reporting Gap</div>
+          <div style="font-size:16px;color:var(--text-secondary);">Finance and Operations cannot run quarterly automation ROI reports inside Make. They export data to Notion and spreadsheets instead.</div>
+        </div>
+        <div class="card subtle" style="padding:20px;">
+          <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">🏢 Structure Gap</div>
+          <div style="font-size:16px;color:var(--text-secondary);">Make's flat folder structure does not reflect how large enterprises organize their work — by department, function, business process, or cost center.</div>
+        </div>
+        <div class="card subtle" style="padding:20px;">
+          <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">🤝 Accountability Gap</div>
+          <div style="font-size:16px;color:var(--text-secondary);">When a business-critical automation fails, who owns it? Custom properties exist and can be used to filter the Scenarios list — but the Analytics Dashboard only filters by status, team, and folder. Custom properties don't appear there at all.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <p style="font-size:16px;font-weight:700;color:var(--purple-dark);margin-bottom:8px;">The highest-value opportunities in enterprise automation are not basic no-code capabilities.</p>
+    <p style="font-size:16px;color:var(--purple-dark);line-height:1.7;">They are <strong>enterprise-operating capabilities</strong> — the systems that help organizations run automation safely and confidently at scale. Visibility, governance, accountability, portfolio management, and business reporting. This is the category Make must win.</p>
+  </div>
+</section>
+
+<!-- ═══ 04 PERSONAS ═══ -->
+<section id="personas" class="section">
+  <div class="section-label">04 — Personas</div>
+  <h2 class="section-title">Three roles,<br><span class="accent">one shared frustration</span></h2>
+  <p class="section-subtitle">Portfolio visibility failures manifest differently at each level of the organization. Understanding each lens is critical to designing the right intervention.</p>
+
+  <div class="grid-3">
+    <div class="persona-card cio">
+      <div class="persona-avatar">👔</div>
+      <div class="persona-role">Executive</div>
+      <div class="persona-name">The CIO</div>
+      <div class="persona-goal">Responsible for the strategic value of the enterprise's automation program. Presents to the board, manages vendors, and defines automation's contribution to business outcomes.</div>
+      <ul class="persona-needs">
+        <li class="persona-need">Operational resilience across all business-critical workflows</li>
+        <li class="persona-need">ROI visibility — total value generated by automation</li>
+        <li class="persona-need">Governance assurance without micromanaging teams</li>
+        <li class="persona-need">A single source of truth for automation health</li>
+        <li class="persona-need">Executive-ready reporting for quarterly business reviews</li>
+      </ul>
+      <div class="spacer-sm"></div>
+      <div style="padding:14px;background:rgba(108,43,217,.08);border-radius:8px;margin-top:12px;">
+        <div style="font-size:12px;font-weight:600;color:var(--purple-dark);">Key insight</div>
+        <div style="font-size:17px;color:var(--purple-dark);margin-top:4px;">The CIO does not care about individual workflow failures. They care whether <strong>the business can rely on automation as infrastructure</strong>.</div>
+      </div>
+    </div>
+
+    <div class="persona-card admin">
+      <div class="persona-avatar">🛠️</div>
+      <div class="persona-role">Platform Admin</div>
+      <div class="persona-name">The Org Admin</div>
+      <div class="persona-goal">Owns the automation ecosystem. Responsible for keeping hundreds of scenarios healthy across dozens of teams, managing costs, and ensuring the right people own the right workflows.</div>
+      <ul class="persona-needs">
+        <li class="persona-need">Full visibility across the entire scenario portfolio</li>
+        <li class="persona-need">Clear ownership: who is responsible for each automation</li>
+        <li class="persona-need">Health overview: which scenarios are at risk right now</li>
+        <li class="persona-need">Cost tracking and operation budget management</li>
+        <li class="persona-need">Business-structure-aware filtering and prioritization</li>
+      </ul>
+      <div class="spacer-sm"></div>
+      <div style="padding:14px;background:#EFF6FF;border-radius:8px;margin-top:12px;">
+        <div style="font-size:12px;font-weight:600;color:#1D4ED8;">Key insight</div>
+        <div style="font-size:17px;color:#1D4ED8;margin-top:4px;">Currently managing this from exported spreadsheets and Notion databases — <strong>building the analytics layer Make doesn't provide</strong>.</div>
+      </div>
+    </div>
+
+    <div class="persona-card lead">
+      <div class="persona-avatar">⚡</div>
+      <div class="persona-role">Team Lead</div>
+      <div class="persona-name">The Team Lead</div>
+      <div class="persona-goal">Responsible for the automations within their function. Needs to know which workflows are working, which need attention, and how their team's automations contribute to broader business metrics.</div>
+      <ul class="persona-needs">
+        <li class="persona-need">Operational awareness of their team's scenarios at a glance</li>
+        <li class="persona-need">Fast troubleshooting when business-critical flows fail</li>
+        <li class="persona-need">Visibility into usage trends and error patterns over time</li>
+        <li class="persona-need">Ability to report team automation impact to leadership</li>
+        <li class="persona-need">Longer history than current Make Analytics provides</li>
+      </ul>
+      <div class="spacer-sm"></div>
+      <div style="padding:14px;background:#ECFDF5;border-radius:8px;margin-top:12px;">
+        <div style="font-size:12px;font-weight:600;color:#065F46;">Key insight</div>
+        <div style="font-size:17px;color:#065F46;margin-top:4px;">Needs a <strong>team-scoped operational view</strong> — not the full org view, but more than a single scenario. Currently filtering manually.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 RESEARCH ═══ -->
+<section id="research" class="section">
+  <div class="section-label">05 — Customer Research</div>
+  <h2 class="section-title">Enterprise pain clusters around<br><span class="accent">control, not capability</span></h2>
+  <p class="section-subtitle">13 Make-specific enterprise-relevant quotes were manually coded from G2, Capterra, GetApp, and the Make Community. The dominant themes are not missing connectors — they are debugging opacity, change management, but ultimately reliability and control as deployments scale.</p>
+
+  <!-- Customer call: Emplifi -->
+  <div style="background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 32px;margin-bottom:40px;box-shadow:var(--shadow-sm);display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:80px;">
+      <div style="width:48px;height:48px;border-radius:12px;background:#F0FDF4;border:1px solid #BBF7D0;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" width="22" height="22"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.02 1.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14h-.08v2.92z"/></svg>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:#16A34A;text-transform:uppercase;letter-spacing:.5px;text-align:center;">Customer<br>Call</div>
+    </div>
+    <div style="flex:1;min-width:240px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+        <span style="font-size:17px;font-weight:700;color:var(--text-primary);">Emplifi</span>
+        <span style="font-size:12px;color:var(--text-tertiary);">·</span>
+        <span style="font-size:12px;color:var(--text-tertiary);">Enterprise customer interview</span>
+      </div>
+      <p style="font-size:16px;line-height:1.8;color:var(--text-secondary);margin-bottom:16px;">
+        The user finds execution log search to be poor — results are not persistent and the matching logic is unclear, making root-cause analysis harder than it should be. Duplicating scenarios and sub-scenarios is tedious and unintuitive, creating friction when scaling automation patterns across teams. Across the conversation, a consistent theme emerged: the user wants more visibility into logs and variables, and better filtering and search capabilities to understand what their automations are actually doing.
+      </p>
+      <div style="padding:12px 16px;background:#F0FDF4;border-radius:8px;border-left:3px solid #16A34A;">
+        <div style="font-size:12px;font-weight:600;color:#15803D;margin-bottom:4px;">Implication for this proposal</div>
+        <div style="font-size:17px;color:#166534;">The Emplifi call adds a qualitative data point that reinforces the coded quote analysis: enterprise users are not struggling with what Make can connect — they are struggling to see and control what Make is doing. A dedicated observability and control layer is not a nice-to-have for this segment; it is the missing operating model that unlocks responsible scale.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:24px;margin-bottom:40px;">
+    <div class="quote-card">
+      <p class="quote-text">"The error reporting is a bit technical… You have to either look up the issues or learn how to read the technical output. Credit use data… you can only view a month's previous data/credit usage. This can be troublesome when you are on pro or non-enterprise plans and you need to 'budget' your credits."</p>
+      <div class="quote-source"><strong><a href="https://www.g2.com/products/integromat-by-celonis-make/reviews" target="_blank" style="color:inherit;">Logan B., Community Development Manager — G2 Reviews, March 2026</a></strong></div>
+      <div class="quote-insight"><strong>Theme: Debugging &amp; observability (38% of coded quotes)</strong> — Error messages require reverse-engineering; usage data is capped at 30 days and locked behind the enterprise tier. The platform's power is undercut by the opacity of its failure modes and billing visibility.</div>
+    </div>
+
+    <div class="quote-card">
+      <p class="quote-text">"The 30-day log retention and full search are available only in the highest tier."<br><br>"Keep in mind that this will make debugging of the scenario very limited."</p>
+      <div class="quote-source"><strong><a href="https://www.g2.com/products/integromat-by-celonis-make/reviews" target="_blank" style="color:inherit;">Verified User in Airlines/Aviation — G2 Reviews, May 2026</a></strong> &nbsp;·&nbsp; <strong><a href="https://community.make.com/t/how-to-disable-data-logging-and-set-data-retention-to-1-day-for-the-entire-organization-pro-plan/101106" target="_blank" style="color:inherit;">mszymkowiak — Make Community, Jan 2026</a></strong></div>
+      <div class="quote-insight"><strong>Theme: Debugging &amp; observability (cont.)</strong> — Two independent sources converge: full log access is paywalled, and enabling confidential mode (common for enterprise security) strips debugging capability entirely. A feature request for <a href="https://community.make.com/t/advanced-error-logs-for-http-module/76223" target="_blank" style="color:var(--purple);">advanced error logging</a> has remained open since 2025.</div>
+    </div>
+
+    <div class="quote-card">
+      <p class="quote-text">"I would like to modify a scenario without taking it into use. A way to do this is to have different versions of a scenario and then determine which one is active. Then you also have history to go back and check how the scenario has changed. If you have version control, then it would also be possible to have auto save as you are not modifying the live scenario."</p>
+      <div class="quote-source"><strong><a href="https://community.make.com/t/feature-request-version-control/2092" target="_blank" style="color:inherit;">tobbemalm — Make Community Feature Request, June 2022</a></strong></div>
+      <div class="quote-insight"><strong>Theme: Change management &amp; versioning (31% of coded quotes)</strong> — The request is four years old and still open. In enterprise settings, editing the live scenario directly — with no staging, no named versions, no rollback — is a meaningful operational risk for every team sharing a production workflow.</div>
+    </div>
+
+    <div class="quote-card">
+      <p class="quote-text">"I have lost countless hours on scenario builds because Make doesn't auto-save and only saves when you click save."<br><br>"I made a ton of edits and then came back to my computer the next morning, it asks if I want to save or discard changes, THEN it times out and erases all of them!!"</p>
+      <div class="quote-source"><strong><a href="https://community.make.com/t/auto-saving-scenarios/75602" target="_blank" style="color:inherit;">Diana_Kirby — Make Community, March 2025</a></strong> &nbsp;·&nbsp; <strong><a href="https://community.make.com/t/why-is-there-not-an-autosave-feature-or-mode-and-it-times-out-and-erases-edits/36646" target="_blank" style="color:inherit;">TheMortgageMeister — Make Community, May 2024</a></strong></div>
+      <div class="quote-insight"><strong>Theme: Change management &amp; versioning (cont.)</strong> — Multiple separate threads report lost work from session timeout and missed manual saves — still happening in 2025 and 2026. The compounding risk in shared, multi-editor scenarios makes this a governance issue, not just a UX inconvenience.</div>
+    </div>
+
+    <div class="quote-card">
+      <p class="quote-text">"We do not find ANY way to connect a MS Teams User that is not an Admin. We tried many different approaches, none of them worked."<br><br>"Yes, we got the redirect URL from your docs: Microsoft Teams" — [the docs URL was wrong; Make confirmed and issued a correction]</p>
+      <div class="quote-source"><strong><a href="https://community.make.com/t/creating-ms-teams-connection-with-non-admin-user/59651" target="_blank" style="color:inherit;">Funkenwerfer — Make Community, November 2024</a></strong></div>
+      <div class="quote-insight"><strong>Theme: Connector, auth &amp; setup friction (23% of coded quotes)</strong> — Enterprise connector setup surfaces auth model mismatches (non-admin users blocked) and stale documentation. Make itself confirmed the redirect URI in its docs was wrong. Each mis-step is a setup tax that accumulates as connector breadth grows.</div>
+    </div>
+
+    <div class="quote-card">
+      <p class="quote-text">"As our automation usage grew, the cost per operation started to add up. Once you exceed the free tier (1,000 operations/month), costs escalate quickly — especially for scenarios that run frequently or process large volumes of data."</p>
+      <div class="quote-source"><strong><a href="https://www.g2.com/products/integromat-by-celonis-make/reviews" target="_blank" style="color:inherit;">Verified User (ScribaVerse) — G2 Reviews, March 2026</a></strong> &nbsp;·&nbsp; <strong><a href="https://www.getapp.com/it-management-software/a/integromat/" target="_blank" style="color:inherit;">GetApp: "operations-based pricing can lead to unexpected expenses"</a></strong></div>
+      <div class="quote-insight"><strong>Theme: Pricing predictability (8% of coded quotes)</strong> — Operations-based pricing without cost-governance tooling catches enterprise buyers off guard at scale. The pattern appears across G2 and GetApp independently, suggesting it is a structural concern, not an outlier complaint.</div>
+    </div>
+  </div>
+
+  <!-- CHART: Feature Request Clusters -->
+  <div class="chart-wrapper" style="margin-bottom:40px;">
+    <div class="chart-title">Coded Make Quote Analysis — Top Friction Themes</div>
+    <div class="chart-subtitle">Share of coded Make customer quotes by topic (n=13 quotes)</div>
+    <div style="height:300px;position:relative;">
+      <canvas id="requestChart"></canvas>
+    </div>
+  </div>
+
+  <div class="callout purple">
+    <div class="callout-icon">💡</div>
+    <div class="callout-content">
+      <h4>The core pattern</h4>
+      <p>Make is liked for its flexibility and visual builder. Enterprise pain begins when scenarios become complex, shared, or mission-critical. The unmet needs are not about connectors — they are about the operating model: observability, safe editing, auth governance, and cost predictability. That is a classic sign of a platform that has grown into enterprise use cases faster than its enterprise operating model has matured.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05b COMMUNITY ═══ -->
+<section id="community" class="section">
+  <div class="section-label">05b — Community Validation</div>
+  <h2 class="section-title">Strong signals<br><span class="accent">from the community</span></h2>
+  <p class="section-subtitle">One Idea Exchange thread — requesting a detailed scenario dashboard with longer history — captures the depth of unmet demand. It is not an isolated feature request. It is multi-year evidence of a structural gap.</p>
+
+  <!-- Make-style Idea Exchange mockup -->
+  <div class="make-window" style="margin-bottom:40px;">
+    <div class="make-topbar">
+      <div class="make-dots"><div class="make-dot r"></div><div class="make-dot y"></div><div class="make-dot g"></div></div>
+      <div class="make-topbar-title">make.com / en / platform-ideas</div>
+    </div>
+    <div style="padding:32px;background:#FAFAFA;">
+      <div style="display:flex;gap:24px;align-items:flex-start;">
+        <!-- Vote box -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
+          <div style="width:60px;height:60px;border-radius:12px;background:var(--purple);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:800;">▲</div>
+          <div style="font-size:22px;font-weight:800;color:var(--purple);">220</div>
+          <div style="font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;">votes</div>
+        </div>
+        <!-- Content -->
+        <div style="flex:1;">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:#CCFBF1;color:#0F766E;">Reviewed</span>
+            <span style="font-size:12px;color:var(--text-tertiary);">Platform ideas and improvements</span>
+          </div>
+          <h3 style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:10px;line-height:1.3;">List of scenarios: Detailed usage dashboard with a longer history</h3>
+          <p style="font-size:16px;color:var(--text-secondary);line-height:1.7;margin-bottom:16px;">
+            "We can start with a graph/dashboard to view which scenarios have used what percentage of the operations/data allowance for that month." — <em>Miko Garrido · Created by Tereza Klobouckova · July 9, 2022</em>
+          </p>
+          <div style="display:flex;gap:24px;flex-wrap:wrap;">
+            <div style="font-size:17px;color:var(--text-tertiary);">📅 <strong style="color:var(--text-primary);">Originally requested July 2022</strong></div>
+            <div style="font-size:17px;color:var(--text-tertiary);">✅ <strong style="color:var(--text-primary);">Status marked Reviewed April 7, 2026</strong></div>
+          </div>
+        </div>
+      </div>
+      <!-- Comment thread preview — real comments from the thread -->
+      <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;gap:12px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;font-weight:700;color:#1D4ED8;">D</div>
+          <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 16px;flex:1;">
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Duane Grice <span style="font-weight:400;color:var(--text-tertiary);">· January 7, 2026</span></div>
+            <div style="font-size:17px;color:var(--text-secondary);">"Need a total number of credits used month by month usage too, so we can spot trends like busy and quiet periods which can be drilled down and split out into different scenarios."</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;font-weight:700;color:#92400E;">J</div>
+          <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 16px;flex:1;">
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Jean-Baptiste JACOB <span style="font-weight:400;color:var(--text-tertiary);">· August 26, 2025</span></div>
+            <div style="font-size:17px;color:var(--text-secondary);">"Very annoying that you've got to go and look for the scenario that used a high number of operations on a given day. This feature would be great!"</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#ECFDF5;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;font-weight:700;color:#065F46;">F</div>
+          <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 16px;flex:1;">
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Farhad Moradi <span style="font-weight:400;color:var(--text-tertiary);">· August 12, 2025</span></div>
+            <div style="font-size:17px;color:var(--text-secondary);">"We need this very badly as we never know where these operations are being used. We must be able to know what scenario is using the highest number of operations so that we plan scenario enhancements to run more efficiently."</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#F5F3FF;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;font-weight:700;color:#7C3AED;">E</div>
+          <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 16px;flex:1;">
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Evate Automation <span style="font-weight:400;color:var(--text-tertiary);">· June 10, 2025</span></div>
+            <div style="font-size:17px;color:var(--text-secondary);">"Same here.."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:40px;">
+    <div class="stat-card" style="text-align:center;">
+      <div class="stat-label">Community Votes</div>
+      <div class="stat-value">220</div>
+      <div class="stat-change neutral">Idea Exchange thread</div>
+    </div>
+    <div class="stat-card" style="text-align:center;">
+      <div class="stat-label">Thread Status</div>
+      <div class="stat-value" style="font-size:20px;white-space:nowrap;">Reviewed</div>
+      <div class="stat-change neutral">Marked Apr 7, 2026</div>
+    </div>
+    <div class="stat-card" style="text-align:center;">
+      <div class="stat-label">Duration of Demand</div>
+      <div class="stat-value">4<span class="unit">yrs</span></div>
+      <div class="stat-change neutral">Jul 2022 → Apr 2026</div>
+    </div>
+  </div>
+
+  <!-- Signal 2: JohnSultant's detailed community post -->
+  <div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:40px;box-shadow:var(--shadow-sm);">
+    <!-- Post header -->
+    <div style="background:#FAFAFA;border-bottom:1px solid var(--border);padding:20px 24px;display:flex;gap:14px;align-items:flex-start;">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px;flex-shrink:0;overflow:hidden;">
+        <img src="https://avatars.discourse-cdn.com/v4/letter/j/96bed5/45.png"
+             onerror="this.style.display='none';this.parentElement.style.background='var(--purple)';"
+             style="width:100%;height:100%;object-fit:cover;" alt="JohnSultant">
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px;flex-wrap:wrap;">
+          <span style="font-size:16px;font-weight:700;color:var(--text-primary);">JohnSultant</span>
+          <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);font-weight:600;padding:2px 8px;border-radius:10px;">Make Community</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-tertiary);">Idea Exchange · Detailed usage dashboard thread</div>
+      </div>
+    </div>
+    <!-- Post body -->
+    <div style="padding:24px;background:white;">
+      <p style="font-size:16px;line-height:1.8;color:var(--text-secondary);margin-bottom:20px;">
+        "I'm currently spending quite a few operations to get my scenario and operations data out of Make and into Notion, where I can analyze it much better. Make is very fun to use — as long as you don't have to think about operations. With 40+ folders, 200+ scenarios, and a monthly reset on that counter, it just doesn't cut it for me.<br><br>
+        I have a database in Notion with all my scenarios, linked to the business processes they're part of. Once a week, I sync all the operations data into my Notion workspace — to track costs over a longer period, calculate the 'cost per year' for every scenario, and roll up those costs to the process database.<br><br>
+        <strong>The Irony:</strong> The scenarios I use to get this data into Notion consume 20–25% of my total operations! It would be much more helpful to have deeper insights into this data directly in Make. Right now, it's not even possible to sort scenarios by their operations or data usage!"
+      </p>
+      <!-- His two illustrations -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div>
+          <img src="https://europe1.discourse-cdn.com/flex013/uploads/make/original/3X/0/3/039ec77cbcc0c97eb1513ee43e8f74686b98ac6c.png"
+               style="width:100%;border-radius:8px;border:1px solid var(--border);" alt="Status and cost of scenarios in Notion dashboard">
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px;font-style:italic;">Screenshot 1: Status and cost of relevant scenarios inside a given dashboard — "super valuable for us"</div>
+        </div>
+        <div>
+          <img src="https://europe1.discourse-cdn.com/flex013/uploads/make/original/3X/e/d/edeafdec350741906447730b5b58401a41e8cbe6.jpeg"
+               style="width:100%;border-radius:8px;border:1px solid var(--border);" alt="Scenario Details Template in Notion">
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px;font-style:italic;">Screenshot 2: Scenario Details Template in Notion — "a much longer history of operations usage helps me understand the value and cost of any given scenario"</div>
+        </div>
+      </div>
+      <div style="padding:12px 16px;background:var(--purple-bg);border-radius:8px;border-left:3px solid var(--purple);">
+        <span style="font-size:17px;color:var(--purple);font-weight:600;">Key figure: </span>
+        <span style="font-size:17px;color:var(--text-primary);">20–25% of total operations consumed just to extract and analyze operations data — in an external tool.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout purple">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-content">
+      <h4>How to read these signals</h4>
+      <p>The Idea Exchange thread validates breadth of demand (220 votes, 4 years, now Reviewed). JohnSultant's post validates depth: a user with 200+ scenarios has built a shadow analytics layer in Notion and is spending a fifth of their operations to maintain it. Together they show the same gap from two angles — many users feel it, and the users who feel it most are doing the most work to compensate.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 CAPABILITIES ═══ -->
+<section id="capabilities" class="section">
+  <div class="section-label">06 — Existing Make Capabilities</div>
+  <h2 class="section-title">Make has a strong<br><span class="accent">enterprise foundation</span></h2>
+  <p class="section-subtitle">This is not a platform starting from scratch. Make already provides meaningful enterprise-grade capabilities — the gap is specific and surgical, not foundational.</p>
+
+  <div class="grid-3" style="margin-bottom:40px;">
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+      <h3 class="card-title">SSO &amp; Identity</h3>
+      <p>Enterprise-grade single sign-on, SAML integration, and identity management. Enterprise security requirements are met at the authentication layer.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+      <h3 class="card-title">Audit Logs</h3>
+      <p>Full audit trail of platform actions. Compliance and security teams can track who changed what, when, and why across the organization.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+      <h3 class="card-title">Teams</h3>
+      <p>Collaborative workspaces with role-based access. Teams enable ownership and permissions management across the organization. Note: not hierarchical.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></div>
+      <h3 class="card-title">Make Grid</h3>
+      <p>Organization-level topology map providing visual orchestration of automation landscapes. Provides high-level oversight of what's running where.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <h3 class="card-title">Enterprise Security</h3>
+      <p>SOC 2 Type II, GDPR compliance, encryption at rest and in transit, IP allowlisting, and dedicated enterprise infrastructure options.</p>
+    </div>
+    <div class="card" style="border-color:var(--purple);background:var(--purple-bg);">
+      <div class="card-icon" style="background:white;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zM17 17H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></div>
+      <h3 class="card-title" style="color:var(--purple-dark);">Custom Scenario Properties ★</h3>
+      <p style="color:var(--purple-dark);">Enterprise customers can define and populate custom properties on scenarios: Business Owner, Department, Cost Center, Criticality, Environment, Business Process, Revenue Impact. These can be displayed, filtered, and sorted in the Scenario list. <strong>This is the critical foundation the solution builds on.</strong></p>
+    </div>
+  </div>
+
+
+</section>
+
+<!-- ═══ 07 GAP ═══ -->
+<section id="gap" class="section">
+  <div class="section-label">07 — Gap Analysis</div>
+  <h2 class="section-title">The <span class="accent">missing layer</span></h2>
+  <p class="section-subtitle">Customers can classify their automations. But they cannot analyze their automations using that classification. The metadata exists. The analytics do not know it exists.</p>
+
+  <!-- What exists today — from Make's own docs -->
+  <div style="margin-bottom:12px;">
+    <div style="display:inline-flex;align-items:center;gap:8px;padding:5px 14px;background:#ECFDF5;border-radius:20px;margin-bottom:20px;">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#065F46;">✓ What already exists in Make</span>
+    </div>
+    <p style="font-size:16px;color:var(--text-secondary);line-height:1.7;margin-bottom:24px;">Custom Scenario Properties are an enterprise-only feature that lets organizations add structured metadata — dropdowns, booleans, numbers, dates — to every scenario. From Make's own documentation:</p>
+  </div>
+
+  <!-- Full-width: scenario table view -->
+  <div style="margin-bottom:24px;">
+    <img src="https://app.archbee.com/api/optimize/oAyFj2GHlBeBVWF5OAir2/QaRvPuVmVBEnuVk7EjJQ4-20251006-122355.png"
+         style="width:100%;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm);"
+         alt="Make scenario table view with custom property columns">
+    <div style="font-size:12px;color:var(--text-tertiary);margin-top:8px;font-style:italic;text-align:center;">
+      Scenario table view with custom property columns — users can add arbitrary metadata (Importance, Owner, Business Unit, etc.) to every scenario.
+      <a href="https://help.make.com/custom-scenario-properties" target="_blank" style="color:var(--purple);font-style:normal;margin-left:6px;">help.make.com →</a>
+    </div>
+  </div>
+
+  <!-- Two-column: filter panel + filter bar -->
+  <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;margin-bottom:32px;align-items:start;">
+    <div>
+      <img src="https://app.archbee.com/api/optimize/oAyFj2GHlBeBVWF5OAir2/cZWBZykhM9Rxw0WcVRVWC-20251006-123003.png"
+           style="width:220px;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm);"
+           alt="Filter panel using custom properties">
+      <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px;font-style:italic;max-width:220px;">Filter panel — properties appear as filter dimensions in the Scenarios list.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;padding-top:8px;">
+      <img src="https://app.archbee.com/api/optimize/oAyFj2GHlBeBVWF5OAir2/njp2_c-6jqhDyNFx2VBq7-20251006-122713.png"
+           style="width:100%;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm);"
+           alt="Filter bar in Make scenario list">
+      <div style="font-size:11px;color:var(--text-tertiary);font-style:italic;">Filter bar — active filters on the scenario list, including custom property values.</div>
+      <!-- Gap callout sits beside/below the filter images -->
+      <div style="padding:20px;background:#FEF2F2;border-radius:var(--radius-lg);border-left:4px solid #DC2626;">
+        <div style="font-size:12px;font-weight:700;color:#991B1B;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">✗ The gap — Analytics</div>
+        <p style="font-size:17px;color:#7F1D1D;line-height:1.65;margin:0;">Custom Scenario Properties are fully supported in the <strong>Scenarios module</strong> — for filtering, sorting, and table views. They do not exist in the <strong>Analytics Dashboard</strong>. There is no way to filter analytics by Importance, Owner, or any other custom dimension, nor to aggregate execution data by business structure. The metadata exists. The analytics do not know it exists.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;">
+      <div style="font-size:17px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px;">Current Flow</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:8px;font-size:17px;font-weight:600;">Scenario Metadata</div>
+        <div style="font-size:18px;color:var(--text-tertiary);">+</div>
+        <div style="padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:8px;font-size:17px;font-weight:600;">Make Analytics</div>
+        <div style="font-size:18px;color:var(--text-tertiary);">=</div>
+        <div style="padding:10px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;font-size:17px;font-weight:600;color:#991B1B;">Disconnected</div>
+      </div>
+    </div>
+    <div style="background:var(--purple-bg);border:1px solid var(--purple-border);border-radius:var(--radius-lg);padding:24px;">
+      <div style="font-size:17px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px;">Proposed Flow</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="padding:10px 16px;background:var(--white);border:1px solid var(--purple-border);border-radius:8px;font-size:17px;font-weight:600;color:var(--purple);">Scenario Metadata</div>
+        <div style="font-size:18px;color:var(--purple);">+</div>
+        <div style="padding:10px 16px;background:var(--white);border:1px solid var(--purple-border);border-radius:8px;font-size:17px;font-weight:600;color:var(--purple);">Custom Analytics</div>
+        <div style="font-size:18px;color:var(--purple);">=</div>
+        <div style="padding:10px 16px;background:var(--purple);border-radius:8px;font-size:17px;font-weight:600;color:white;">Portfolio Visibility</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 PROBLEM STATEMENT ═══ -->
+<section id="problem" class="section" style="background:var(--text-primary);">
+  <div class="section-label" style="color:var(--purple-lighter);">08 — Problem Statement</div>
+  <div style="max-width:760px;">
+    <h2 style="font-size:clamp(28px,4vw,54px);font-weight:800;letter-spacing:-.03em;line-height:1.12;color:white;margin-bottom:32px;">
+      Organizations can classify automations.<br>
+      <span style="color:var(--purple-lighter);">They cannot manage them</span><br>
+      using their own business structure.
+    </h2>
+    <div style="background:rgba(108,43,217,.15);border:1px solid rgba(139,92,246,.3);border-radius:var(--radius-lg);padding:32px;margin-bottom:40px;">
+      <p style="font-size:21px;color:rgba(255,255,255,.85);line-height:1.75;font-weight:400;">
+        As organizations scale from dozens to hundreds of automations, Make provides <strong style="color:white;">workflow visibility</strong> but lacks <strong style="color:var(--purple-lighter);">portfolio visibility</strong>. Enterprise customers already provide business context through Scenario Properties, but Analytics cannot leverage that context. As a result, organizations that have invested in classifying their automations by department, criticality, and business process cannot use that classification for anything beyond filtering a list.
+      </p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;gap:16px;align-items:flex-start;">
+        <div style="width:28px;height:28px;border-radius:6px;background:rgba(108,43,217,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--purple-lighter);font-weight:700;font-size:17px;">1</div>
+        <p style="font-size:17px;color:rgba(255,255,255,.7);line-height:1.7;">This prevents large organizations from operating automation portfolios with confidence — forcing them to rebuild the analytics layer externally in spreadsheets and Notion databases.</p>
+      </div>
+      <div style="display:flex;gap:16px;align-items:flex-start;">
+        <div style="width:28px;height:28px;border-radius:6px;background:rgba(108,43,217,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--purple-lighter);font-weight:700;font-size:17px;">2</div>
+        <p style="font-size:17px;color:rgba(255,255,255,.7);line-height:1.7;">It blocks CIOs from running automation-as-infrastructure programs with board-level accountability — making Make feel like a departmental tool rather than an enterprise platform.</p>
+      </div>
+      <div style="display:flex;gap:16px;align-items:flex-start;">
+        <div style="width:28px;height:28px;border-radius:6px;background:rgba(108,43,217,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--purple-lighter);font-weight:700;font-size:17px;">3</div>
+        <p style="font-size:17px;color:rgba(255,255,255,.7);line-height:1.7;">Left unaddressed, this gap becomes a competitive vulnerability as enterprise-focused iPaaS vendors add governance and portfolio management as core platform capabilities.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ 09 SOLUTION ═══ -->
+<section id="solution" class="section">
+  <div class="section-label">09 — Solution</div>
+  <h2 class="section-title"><span class="accent">Enterprise Automation</span><br>Control Plane</h2>
+  <p class="section-subtitle">The Control Plane is not a new product. It is not a governance system. It is the smallest capability that unlocks enterprise-scale portfolio visibility — and it emerges naturally from two focused additions.</p>
+
+  <div class="callout purple" style="margin-bottom:48px;">
+    <div class="callout-icon">🎯</div>
+    <div class="callout-content">
+      <h4>Intentionally minimal scope</h4>
+      <p>Although marketed as a Control Plane, the actual implementation is focused and surgical. This proposal introduces only two capabilities: <strong>Subfolders</strong> and a <strong>Custom Analytics Widget Builder</strong>. No new governance system. No observability platform. No AI. Just the smallest surface area that unlocks enterprise-scale portfolio visibility.</p>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:32px;margin-bottom:48px;">
+    <!-- Capability 1 -->
+    <div class="card" style="border-color:var(--purple);padding:36px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <div style="width:44px;height:44px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;">📁</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.07em;">Capability 1</div>
+          <div style="font-size:19px;font-weight:700;color:var(--text-primary);">Subfolders</div>
+        </div>
+      </div>
+      <p style="font-size:16px;color:var(--text-secondary);line-height:1.7;margin-bottom:20px;">Teams provide ownership and permissions, but they are not hierarchical. Make currently lacks a way to mirror the organizational hierarchy of the enterprise. Subfolders introduce a simple, purpose-built structure for this — separate from permissions.</p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:17px;font-family:monospace;line-height:2;">
+        <div style="color:var(--purple);font-weight:600;">📁 Revenue</div>
+        <div style="padding-left:20px;color:var(--text-secondary);">📂 Sales Operations</div>
+        <div style="padding-left:20px;color:var(--text-secondary);">📂 Marketing Operations</div>
+        <div style="padding-left:20px;color:var(--text-secondary);">📂 Customer Success</div>
+        <div style="color:var(--purple);font-weight:600;margin-top:4px;">📁 Finance</div>
+        <div style="padding-left:20px;color:var(--text-secondary);">📂 Billing</div>
+        <div style="padding-left:20px;color:var(--text-secondary);">📂 Treasury</div>
+        <div style="color:var(--purple);font-weight:600;margin-top:4px;">📁 Operations</div>
+        <div style="padding-left:20px;color:var(--text-secondary);">📂 IT Infrastructure</div>
+        <div style="padding-left:20px;color:var(--text-secondary);">📂 Procurement</div>
+      </div>
+      <div style="margin-top:16px;padding:12px 14px;background:var(--purple-bg);border-radius:8px;font-size:12px;color:var(--purple-dark);font-weight:500;">Purpose: <strong>organizational structure</strong>, not permissions. Teams handle access. Subfolders handle navigation.</div>
+    </div>
+
+    <!-- Capability 2 -->
+    <div class="card" style="border-color:var(--purple);padding:36px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <div style="width:44px;height:44px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;">📊</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.07em;">Capability 2 — Primary</div>
+          <div style="font-size:19px;font-weight:700;color:var(--text-primary);">Custom Analytics Widget Builder</div>
+        </div>
+      </div>
+      <p style="font-size:16px;color:var(--text-secondary);line-height:1.7;margin-bottom:20px;">Administrators build analytics widgets from system fields and custom Scenario Properties — in a single unified builder. No artificial distinction between system metrics and business data. The platform provides primitives; customers create the views they need.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+          <div style="font-size:17px;font-weight:600;color:var(--text-primary);">KPI Cards</div>
+          <span class="make-badge green">MVP</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+          <div style="font-size:17px;font-weight:600;color:var(--text-primary);">Bar &amp; Line Charts</div>
+          <span class="make-badge green">MVP</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--purple-bg);border:1px solid var(--purple-border);border-radius:8px;">
+          <div style="font-size:17px;font-weight:600;color:var(--purple-dark);">Fully Custom Table ★</div>
+          <span class="make-badge purple">Key Feature</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--purple-bg);border:1px solid var(--purple-border);border-radius:8px;">
+          <div style="font-size:17px;font-weight:600;color:var(--purple-dark);">Custom Date Ranges ★</div>
+          <span class="make-badge purple">Key Feature</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Out of scope -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;">
+    <div style="font-size:17px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;">Explicitly Out of Scope (for this release)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      <div class="chip">Workflow Approvals</div>
+      <div class="chip">Service Catalog</div>
+      <div class="chip">Change Management</div>
+      <div class="chip">Versioning</div>
+      <div class="chip">Root Cause Analysis</div>
+      <div class="chip">AI Recommendations</div>
+      <div class="chip">Observability Platform</div>
+      <div class="chip">Incident Routing</div>
+    </div>
+    <div style="margin-top:16px;font-size:17px;color:var(--text-secondary);">These represent meaningful future opportunities. They are not required to solve the identified problem. Scope discipline is the mechanism through which this ships.</div>
+  </div>
+</section>
+
+<!-- ═══ 10 UX ═══ -->
+<section id="ux" class="section">
+  <div class="section-label">10 — User Experience</div>
+  <h2 class="section-title">The <span class="accent">widget builder</span> experience</h2>
+  <p class="section-subtitle">A five-step flow that feels native to Make Analytics — because it is. System fields and custom properties are treated identically throughout.</p>
+
+  <!-- Widget Builder Steps -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:48px;">
+    <div style="text-align:center;">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--purple);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin:0 auto 10px;">1</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Source</div>
+      <div style="font-size:12px;color:var(--text-secondary);">Org · Team · Folder · Subfolder</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--purple);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin:0 auto 10px;">2</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Metric</div>
+      <div style="font-size:12px;color:var(--text-secondary);">System or custom property</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--purple);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin:0 auto 10px;">3</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Filters</div>
+      <div style="font-size:12px;color:var(--text-secondary);">Any field or property</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--purple);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin:0 auto 10px;">4</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Dimensions</div>
+      <div style="font-size:12px;color:var(--text-secondary);">Group by business context</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--purple);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin:0 auto 10px;">5</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Visualization</div>
+      <div style="font-size:12px;color:var(--text-secondary);">Card · Chart · Table</div>
+    </div>
+  </div>
+
+  <!-- Widget Builder Mockup -->
+  <div class="make-window" style="margin-bottom:48px;">
+    <div class="make-topbar">
+      <div class="make-dots"><div class="make-dot r"></div><div class="make-dot y"></div><div class="make-dot g"></div></div>
+      <div class="make-topbar-title">Analytics → Widget Builder — New Widget</div>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <button class="make-btn make-btn-secondary" style="font-size:12px;">Cancel</button>
+        <button class="make-btn make-btn-primary" style="font-size:12px;">Save Widget</button>
+      </div>
+    </div>
+    <div style="display:flex;min-height:500px;">
+      <!-- Left: Config panel -->
+      <div style="width:320px;border-right:1px solid var(--border);padding:24px;background:#FAFAFA;flex-shrink:0;overflow-y:auto;">
+        <!-- Step 1: Source -->
+        <div style="margin-bottom:24px;">
+          <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">① Source</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:17px;cursor:pointer;">
+              <input type="radio" name="source" checked style="accent-color:var(--purple);"> Organization (all scenarios)
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:17px;cursor:pointer;">
+              <input type="radio" name="source" style="accent-color:var(--purple);"> Specific Team
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:17px;cursor:pointer;">
+              <input type="radio" name="source" style="accent-color:var(--purple);"> Folder / Subfolder
+            </label>
+          </div>
+        </div>
+        <!-- Step 2: Metric -->
+        <div style="margin-bottom:24px;">
+          <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">② Metric</div>
+          <div style="background:white;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+            <div style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--text-tertiary);border-bottom:1px solid var(--border-light);text-transform:uppercase;">System Metrics</div>
+            <div style="padding:4px 0;">
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;background:var(--purple-bg);color:var(--purple);font-weight:500;border-left:2px solid var(--purple);">Executions</div>
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;color:var(--text-secondary);">Operations</div>
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;color:var(--text-secondary);">Errors</div>
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;color:var(--text-secondary);">Error Rate</div>
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;color:var(--text-secondary);">Active Scenarios</div>
+            </div>
+            <div style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--text-tertiary);border-top:1px solid var(--border-light);border-bottom:1px solid var(--border-light);text-transform:uppercase;">Custom Properties</div>
+            <div style="padding:4px 0;">
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;color:var(--text-secondary);">Revenue Impact</div>
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;color:var(--text-secondary);">Hours Saved</div>
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;color:var(--text-secondary);">Cost Avoided</div>
+              <div style="padding:7px 12px;font-size:17px;cursor:pointer;color:var(--text-secondary);">Risk Score</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;">Aggregation</div>
+            <select style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:17px;font-family:Inter,sans-serif;color:var(--text-primary);">
+              <option>Sum</option><option>Average</option><option>Count</option><option>Min</option><option>Max</option>
+            </select>
+          </div>
+        </div>
+        <!-- Step 3: Filters -->
+        <div style="margin-bottom:24px;">
+          <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">③ Filters</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Inter,sans-serif;">
+                <option>Environment</option><option>Department</option><option>Criticality</option>
+              </select>
+              <select style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Inter,sans-serif;">
+                <option>= Production</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Inter,sans-serif;">
+                <option>Criticality</option><option>Department</option>
+              </select>
+              <select style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Inter,sans-serif;">
+                <option>= Critical</option>
+              </select>
+            </div>
+            <button style="padding:7px;border:1px dashed var(--border);border-radius:6px;background:transparent;font-size:12px;color:var(--purple);cursor:pointer;font-family:Inter,sans-serif;">+ Add filter</button>
+          </div>
+        </div>
+        <!-- Step 4: Dimensions -->
+        <div style="margin-bottom:24px;">
+          <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">④ Group By</div>
+          <select style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:17px;font-family:Inter,sans-serif;color:var(--text-primary);">
+            <option>Department</option><option>Criticality</option><option>Business Process</option><option>Owner</option><option>Cost Center</option>
+          </select>
+        </div>
+        <!-- Step 5: Viz -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">⑤ Visualization</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="padding:12px;border:2px solid var(--purple);border-radius:8px;text-align:center;cursor:pointer;background:var(--purple-bg);">
+              <div style="font-size:18px;margin-bottom:4px;">📊</div>
+              <div style="font-size:12px;font-weight:600;color:var(--purple);">Bar Chart</div>
+            </div>
+            <div style="padding:12px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;">
+              <div style="font-size:18px;margin-bottom:4px;">📈</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">Line Chart</div>
+            </div>
+            <div style="padding:12px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;">
+              <div style="font-size:18px;margin-bottom:4px;">🔢</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">KPI Card</div>
+            </div>
+            <div style="padding:12px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;">
+              <div style="font-size:18px;margin-bottom:4px;">📋</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">Table</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Right: Preview -->
+      <div style="flex:1;padding:32px 32px;background:white;display:flex;flex-direction:column;justify-content:center;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px;">Preview — Executions by Department (Production · Critical)</div>
+        <div style="height:320px;position:relative;margin-bottom:20px;">
+          <canvas id="previewChart"></canvas>
+        </div>
+        <!-- Date range row -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;background:white;cursor:pointer;font-family:Inter,sans-serif;">Last 30 days</button>
+          <button style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;background:white;cursor:pointer;font-family:Inter,sans-serif;">Last Quarter</button>
+          <button style="padding:6px 12px;border:1px solid var(--purple);border-radius:6px;font-size:12px;font-weight:600;background:var(--purple-bg);color:var(--purple);cursor:pointer;font-family:Inter,sans-serif;">Last 12 Months</button>
+          <button style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;background:white;cursor:pointer;font-family:Inter,sans-serif;">YTD</button>
+          <button style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;background:white;cursor:pointer;font-family:Inter,sans-serif;">Previous Year</button>
+          <button style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;background:white;cursor:pointer;font-family:Inter,sans-serif;">Custom Range</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard illustrations -->
+  <div style="margin-bottom:0;">
+    <h3 style="font-size:22px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">What enterprise teams actually build</h3>
+    <p style="font-size:17px;color:var(--text-secondary);line-height:1.7;margin-bottom:40px;">Five illustrative dashboards — each answering a different business question. All built from Make's native analytics data (operations, executions, errors, status, team, folder) plus Custom Scenario Properties. None exist today. All become possible with the widget builder.</p>
+
+    <!-- ── 1. RELIABILITY ── -->
+    <div style="margin-bottom:48px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;">Dashboard 1</span>
+      </div>
+      <h4 style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">Reliability Dashboard</h4>
+      <p style="font-size:14px;color:var(--text-tertiary);font-style:italic;margin-bottom:16px;">Otázka: Jsou naše business-critical automace zdravé?</p>
+      <div class="make-window">
+        <div class="make-topbar">
+          <div class="make-dots"><div class="make-dot r"></div><div class="make-dot y"></div><div class="make-dot g"></div></div>
+          <div class="make-topbar-title">Analytics → Reliability Dashboard · Criticality: Critical · Last 30 days</div>
+        </div>
+        <div style="padding:8px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:center;">
+          <select style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:Inter,sans-serif;color:var(--text-secondary);"><option>Status: Active</option></select>
+          <select style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:Inter,sans-serif;color:var(--text-secondary);"><option>Team: All</option></select>
+          <select style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:Inter,sans-serif;color:var(--text-secondary);"><option>Criticality: Critical</option></select>
+          <div style="margin-left:auto;display:flex;gap:4px;">
+            <span style="padding:3px 9px;border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text-tertiary);background:white;cursor:pointer;">24h</span>
+            <span style="padding:3px 9px;border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text-tertiary);background:white;cursor:pointer;">7d</span>
+            <span style="padding:3px 9px;border:1px solid var(--purple);border-radius:5px;font-size:11px;color:var(--purple);background:var(--purple-bg);font-weight:600;cursor:pointer;">30d</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border);">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Error Rate</div>
+            <div style="font-size:24px;font-weight:700;color:var(--amber);">4.2%</div>
+            <div style="font-size:11px;color:var(--green);margin-top:2px;">↓ 0.8% vs prev</div>
+          </div>
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Failed Executions</div>
+            <div style="font-size:24px;font-weight:700;color:var(--red);">1,104</div>
+            <div style="font-size:11px;color:var(--red);margin-top:2px;">↑ 12% vs prev</div>
+          </div>
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Critical with Errors</div>
+            <div style="font-size:24px;font-weight:700;color:var(--text-primary);">5 <span style="font-size:14px;color:var(--text-tertiary);">/ 12</span></div>
+            <div style="font-size:11px;color:var(--amber);margin-top:2px;">⚠ 3 above threshold</div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Inactive Critical</div>
+            <div style="font-size:24px;font-weight:700;color:var(--text-primary);">2</div>
+            <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">Not run in &gt;7 days</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Error Rate by Criticality</div>
+            <div style="height:140px;position:relative;"><canvas id="relCritChart"></canvas></div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Failed Executions by Department</div>
+            <div style="height:140px;position:relative;"><canvas id="relDeptChart"></canvas></div>
+          </div>
+        </div>
+        <div>
+          <div style="padding:8px 18px;font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-light);">Top Failing Workflows</div>
+          <table class="make-table" style="font-size:12px;">
+            <thead><tr><th>Scenario</th><th>Department</th><th>Errors (30d)</th><th>Error Rate</th><th>Last Failed</th></tr></thead>
+            <tbody>
+              <tr><td style="font-weight:500;">Revenue Sync</td><td><span class="chip purple" style="font-size:10px;">Finance</span></td><td style="color:var(--red);font-weight:600;">891</td><td style="color:var(--red);font-weight:600;">10.68%</td><td style="color:var(--red);">3hr ago</td></tr>
+              <tr><td style="font-weight:500;">Lead Enrichment</td><td><span class="chip purple" style="font-size:10px;">Marketing</span></td><td style="color:var(--amber);font-weight:600;">143</td><td style="color:var(--amber);font-weight:600;">6.2%</td><td style="color:var(--text-secondary);">Yesterday</td></tr>
+              <tr><td style="font-weight:500;">Invoice Processing</td><td><span class="chip purple" style="font-size:10px;">Finance</span></td><td style="color:var(--text-secondary);">142</td><td style="color:var(--amber);font-weight:600;">0.57%</td><td style="color:var(--text-secondary);">2min ago</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 2. COST & CONSUMPTION ── -->
+    <div style="margin-bottom:48px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;">Dashboard 2</span>
+      </div>
+      <h4 style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">Cost &amp; Consumption Dashboard</h4>
+      <p style="font-size:14px;color:var(--text-tertiary);font-style:italic;margin-bottom:16px;">Otázka: Kde spotřebováváme nejvíce automatizačních zdrojů?</p>
+      <div class="make-window">
+        <div class="make-topbar">
+          <div class="make-dots"><div class="make-dot r"></div><div class="make-dot y"></div><div class="make-dot g"></div></div>
+          <div class="make-topbar-title">Analytics → Cost &amp; Consumption · All Teams · Last 12 Months</div>
+        </div>
+        <div style="padding:8px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:center;">
+          <select style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:Inter,sans-serif;color:var(--text-secondary);"><option>Status: All</option></select>
+          <select style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:Inter,sans-serif;color:var(--text-secondary);"><option>Team: All</option></select>
+          <div style="margin-left:auto;display:flex;gap:4px;">
+            <span style="padding:3px 9px;border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text-tertiary);background:white;cursor:pointer;">30d</span>
+            <span style="padding:3px 9px;border:1px solid var(--purple);border-radius:5px;font-size:11px;color:var(--purple);background:var(--purple-bg);font-weight:600;cursor:pointer;">12M</span>
+            <span style="padding:3px 9px;border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text-tertiary);background:white;cursor:pointer;">YTD</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Operations by Department</div>
+            <div style="height:160px;position:relative;"><canvas id="costDeptChart"></canvas></div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Usage Trend — Total Operations (12M)</div>
+            <div style="height:160px;position:relative;"><canvas id="costTrendChart"></canvas></div>
+          </div>
+        </div>
+        <div>
+          <div style="padding:8px 18px;font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-light);">Top Consumers</div>
+          <table class="make-table" style="font-size:12px;">
+            <thead><tr><th>Scenario</th><th>Team</th><th>Operations (12M)</th><th>Usage Change</th><th>Business Process</th></tr></thead>
+            <tbody>
+              <tr><td style="font-weight:500;">Payment Reconciliation</td><td>Finance</td><td style="font-weight:600;">312,480</td><td style="color:var(--amber);">↑ 34%</td><td style="color:var(--text-secondary);">Finance Ops</td></tr>
+              <tr><td style="font-weight:500;">ERP Order Sync</td><td>Operations</td><td style="font-weight:600;">198,760</td><td style="color:var(--green);">↑ 8%</td><td style="color:var(--text-secondary);">Order Management</td></tr>
+              <tr><td style="font-weight:500;">CRM Lead Push</td><td>Marketing</td><td style="font-weight:600;">156,320</td><td style="color:var(--red);">↑ 62%</td><td style="color:var(--text-secondary);">Lead Generation</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 3. GOVERNANCE ── -->
+    <div style="margin-bottom:48px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;">Dashboard 3</span>
+      </div>
+      <h4 style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">Governance Dashboard</h4>
+      <p style="font-size:14px;color:var(--text-tertiary);font-style:italic;margin-bottom:16px;">Otázka: Kdo vlastní naši automatizační krajinu?</p>
+      <div class="make-window">
+        <div class="make-topbar">
+          <div class="make-dots"><div class="make-dot r"></div><div class="make-dot y"></div><div class="make-dot g"></div></div>
+          <div class="make-topbar-title">Analytics → Governance Dashboard · All Teams · All Scenarios</div>
+        </div>
+        <div style="padding:8px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:center;">
+          <select style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:Inter,sans-serif;color:var(--text-secondary);"><option>Folder: All</option></select>
+          <select style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:Inter,sans-serif;color:var(--text-secondary);"><option>Status: All</option></select>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Total Scenarios</div>
+            <div style="font-size:24px;font-weight:700;color:var(--text-primary);">247</div>
+            <div style="font-size:11px;color:var(--green);margin-top:2px;">↑ 18 this month</div>
+          </div>
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Unassigned (No Owner)</div>
+            <div style="font-size:24px;font-weight:700;color:var(--red);">34</div>
+            <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">13.8% of portfolio</div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Critical, No Owner</div>
+            <div style="font-size:24px;font-weight:700;color:var(--red);">7</div>
+            <div style="font-size:11px;color:var(--amber);margin-top:2px;">⚠ Requires immediate action</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Automations by Department</div>
+            <div style="height:150px;position:relative;"><canvas id="govDeptChart"></canvas></div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Critical Workflows by Team</div>
+            <table class="make-table" style="font-size:12px;margin-top:0;">
+              <thead><tr><th>Team</th><th>Critical</th><th>No Owner</th><th>Inactive</th></tr></thead>
+              <tbody>
+                <tr><td>Finance</td><td style="font-weight:600;">14</td><td style="color:var(--red);">4</td><td style="color:var(--amber);">1</td></tr>
+                <tr><td>Operations</td><td style="font-weight:600;">11</td><td style="color:var(--red);">2</td><td style="color:var(--text-secondary);">0</td></tr>
+                <tr><td>Marketing</td><td style="font-weight:600;">6</td><td style="color:var(--amber);">1</td><td style="color:var(--text-secondary);">0</td></tr>
+                <tr><td>IT</td><td style="font-weight:600;">9</td><td style="color:var(--text-secondary);">0</td><td style="color:var(--red);">3</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 4. EXECUTIVE PORTFOLIO ── -->
+    <div style="margin-bottom:48px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;">Dashboard 4</span>
+      </div>
+      <h4 style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">Executive Portfolio Dashboard</h4>
+      <p style="font-size:14px;color:var(--text-tertiary);font-style:italic;margin-bottom:16px;">Otázka: Můžeme se na naši automatizační platformu spolehnout?</p>
+      <div class="make-window">
+        <div class="make-topbar">
+          <div class="make-dots"><div class="make-dot r"></div><div class="make-dot y"></div><div class="make-dot g"></div></div>
+          <div class="make-topbar-title">Analytics → Executive Portfolio · All Teams · YTD</div>
+        </div>
+        <div style="padding:8px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:center;">
+          <select style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:Inter,sans-serif;color:var(--text-secondary);"><option>Status: Production</option></select>
+          <div style="margin-left:auto;display:flex;gap:4px;">
+            <span style="padding:3px 9px;border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text-tertiary);background:white;cursor:pointer;">30d</span>
+            <span style="padding:3px 9px;border:1px solid var(--purple);border-radius:5px;font-size:11px;color:var(--purple);background:var(--purple-bg);font-weight:600;cursor:pointer;">YTD</span>
+            <span style="padding:3px 9px;border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text-tertiary);background:white;cursor:pointer;">12M</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border);">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Production Automations</div>
+            <div style="font-size:24px;font-weight:700;color:var(--text-primary);">247</div>
+            <div style="font-size:11px;color:var(--green);margin-top:2px;">↑ 31 YTD</div>
+          </div>
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Critical Automations</div>
+            <div style="font-size:24px;font-weight:700;color:var(--text-primary);">40</div>
+            <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">16.2% of portfolio</div>
+          </div>
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Org Error Rate</div>
+            <div style="font-size:24px;font-weight:700;color:var(--amber);">2.1%</div>
+            <div style="font-size:11px;color:var(--green);margin-top:2px;">↓ 0.4% vs last year</div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Business Processes</div>
+            <div style="font-size:24px;font-weight:700;color:var(--text-primary);">18</div>
+            <div style="font-size:11px;color:var(--green);margin-top:2px;">↑ 4 vs last year</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Automation Growth (YTD monthly)</div>
+            <div style="height:150px;position:relative;"><canvas id="execGrowthChart"></canvas></div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Error Rate Trend (YTD monthly)</div>
+            <div style="height:150px;position:relative;"><canvas id="execErrorChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 5. ROI & BUSINESS IMPACT ── -->
+    <div style="margin-bottom:0;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;">Dashboard 5</span>
+      </div>
+      <h4 style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">ROI &amp; Business Impact Dashboard</h4>
+      <p style="font-size:14px;color:var(--text-tertiary);font-style:italic;margin-bottom:16px;">Otázka: Jakou hodnotu automatizace přináší? <span style="font-style:normal;font-size:12px;color:var(--text-tertiary);">(requires Custom Properties: Revenue Impact, Hours Saved, Cost Avoided)</span></p>
+      <div class="make-window">
+        <div class="make-topbar">
+          <div class="make-dots"><div class="make-dot r"></div><div class="make-dot y"></div><div class="make-dot g"></div></div>
+          <div class="make-topbar-title">Analytics → ROI &amp; Impact · All Teams · Last 12 Months</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Total Hours Saved</div>
+            <div style="font-size:24px;font-weight:700;color:var(--green);">14,820 h</div>
+            <div style="font-size:11px;color:var(--green);margin-top:2px;">= 7.4 FTE equivalents</div>
+          </div>
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Revenue Impact</div>
+            <div style="font-size:24px;font-weight:700;color:var(--green);">$4.73M</div>
+            <div style="font-size:11px;color:var(--green);margin-top:2px;">↑ 22% vs prior year</div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Cost Avoided</div>
+            <div style="font-size:24px;font-weight:700;color:var(--green);">$1.2M</div>
+            <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">Error prevention + SLA savings</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);">
+          <div style="padding:14px 18px;border-right:1px solid var(--border);">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Hours Saved by Department</div>
+            <div style="height:150px;position:relative;"><canvas id="roiHoursChart"></canvas></div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Revenue Impact by Business Process</div>
+            <div style="height:150px;position:relative;"><canvas id="roiRevenueChart"></canvas></div>
+          </div>
+        </div>
+        <div style="padding:10px 18px;background:var(--surface);font-size:11px;color:var(--text-tertiary);">
+          Powered by Custom Properties · Revenue Impact, Hours Saved, Cost Avoided set per-scenario by Operations team
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- The Control Plane emerges -->
+  <div class="callout dark" style="margin-bottom:0;">
+    <div class="callout-icon">🌐</div>
+    <div class="callout-content">
+      <h4>Why it becomes a Control Plane</h4>
+      <p>The Control Plane is not a separate product — it emerges naturally from flexible reporting. Customers build their own Reliability Dashboard, Cost Dashboard, Governance Dashboard, and Executive Dashboard without Make prescribing those views. The platform provides primitives. Each enterprise creates the lens that matches how <em>they</em> operate. That is what transforms a reporting feature into a control plane.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 METRICS ═══ -->
+<section id="metrics" class="section">
+  <div class="section-label">11 — Success Metrics</div>
+  <h2 class="section-title">How we know<br><span class="accent">it's working</span></h2>
+  <p class="section-subtitle">Four measurement layers. The first two confirm the feature landed. The third — Value Realization — is the most important: it validates the core hypothesis that enterprises will manage automation through business context, not just technical metrics.</p>
+
+  <!-- ADOPTION -->
+  <div style="margin-bottom:36px;">
+    <div style="font-size:13px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+      <span style="width:24px;height:24px;background:var(--purple);color:white;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">1</span>
+      Adoption
+    </div>
+    <div class="grid-3" style="gap:16px;">
+      <div class="metric-block">
+        <div class="metric-name">Primary KPI</div>
+        <div class="metric-val">≥40%</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">of Enterprise orgs create at least one custom widget within 90 days of launch</div>
+        <div class="metric-desc">Measures whether customers perceive value in the new capability.</div>
+      </div>
+      <div class="metric-block">
+        <div class="metric-name">Structure Adoption</div>
+        <div class="metric-val">≥60%</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">of Enterprise orgs with 100+ scenarios adopt subfolders</div>
+        <div class="metric-desc">Validates that the hierarchy model solves a real organizational problem.</div>
+      </div>
+      <div class="metric-block">
+        <div class="metric-name">Depth of Adoption</div>
+        <div class="metric-val">≥5</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">median widgets per active Enterprise org at 6 months post-launch</div>
+        <div class="metric-desc">Measures whether customers are building meaningful reporting workflows rather than experimenting once.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENGAGEMENT -->
+  <div style="margin-bottom:36px;">
+    <div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+      <span style="width:24px;height:24px;background:var(--blue);color:white;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">2</span>
+      Engagement
+    </div>
+    <div class="grid-3" style="gap:16px;">
+      <div class="metric-block">
+        <div class="metric-name">Weekly Dashboard Usage</div>
+        <div class="metric-val">≥3×</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">dashboard viewing sessions per admin or org owner per week</div>
+        <div class="metric-desc">Measures whether dashboards become part of operational routines.</div>
+      </div>
+      <div class="metric-block">
+        <div class="metric-name">Dashboard Maintenance</div>
+        <div class="metric-val">≥1×</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">dashboard edit per organization per month</div>
+        <div class="metric-desc">Indicates active usage and evolving reporting needs rather than one-time setup.</div>
+      </div>
+      <div class="metric-block">
+        <div class="metric-name">Saved Dashboards</div>
+        <div class="metric-val">≥3</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">median saved dashboards per active Enterprise org</div>
+        <div class="metric-desc">Measures whether customers are creating multiple business views — Reliability, Governance, Cost, Executive.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VALUE REALIZATION -->
+  <div style="margin-bottom:36px;">
+    <div style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+      <span style="width:24px;height:24px;background:var(--green);color:white;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">3</span>
+      Value Realization
+    </div>
+    <p style="font-size:15px;color:var(--text-secondary);margin-bottom:16px;padding-left:34px;">These are the most important metrics — they directly validate the core hypothesis.</p>
+    <div class="grid-3" style="gap:16px;">
+      <div class="metric-block" style="border-left:3px solid var(--green);">
+        <div class="metric-name">Business Context Utilization</div>
+        <div class="metric-val" style="color:var(--green);">≥50%</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">of created widgets use at least one Scenario Property</div>
+        <div class="metric-desc">e.g. Owner, Department, Criticality, Environment, Cost Center, Business Process. Validates that customers are operationalizing business metadata, not just using Analytics as they do today.</div>
+      </div>
+      <div class="metric-block" style="border-left:3px solid var(--green);">
+        <div class="metric-name">Business-Dimension Adoption</div>
+        <div class="metric-val" style="color:var(--green);">≥40%</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">of Enterprise orgs build dashboards using business dimensions</div>
+        <div class="metric-desc">e.g. Department, Criticality, Owner, Business Process. Validates that organizations are managing automation through business context, not individual workflows.</div>
+      </div>
+      <div class="metric-block" style="border-left:3px solid var(--green);">
+        <div class="metric-name">Dashboard Sophistication</div>
+        <div class="metric-val" style="color:var(--green);">≥2</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">average Scenario Properties referenced per dashboard</div>
+        <div class="metric-desc">Measures whether dashboards evolve beyond operational metrics into portfolio management tools.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LONG-TERM IMPACT -->
+  <div style="margin-bottom:36px;">
+    <div style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+      <span style="width:24px;height:24px;background:var(--text-secondary);color:white;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">4</span>
+      Long-Term Business Impact
+    </div>
+    <p style="font-size:15px;color:var(--text-secondary);margin-bottom:16px;padding-left:34px;">Treat these as directional outcomes rather than launch KPIs.</p>
+    <div class="grid-3" style="gap:16px;">
+      <div class="metric-block">
+        <div class="metric-name">Enterprise Retention Correlation</div>
+        <div class="metric-val" style="font-size:18px;">Δ Retention</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">Measure delta between orgs actively using custom dashboards vs. those that do not</div>
+        <div class="metric-desc"><em>Hypothesis:</em> Organizations that operationalize automation visibility are more likely to retain and expand.</div>
+      </div>
+      <div class="metric-block">
+        <div class="metric-name">Enterprise Expansion Correlation</div>
+        <div class="metric-val" style="font-size:18px;">Δ Expansion</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">Measure expansion rate of orgs actively using custom dashboards</div>
+        <div class="metric-desc"><em>Hypothesis:</em> Portfolio visibility becomes increasingly valuable as automation adoption grows.</div>
+      </div>
+      <div class="metric-block">
+        <div class="metric-name">Reduced External Reporting</div>
+        <div class="metric-val" style="font-size:18px;">↓ Workarounds</div>
+        <div class="metric-desc" style="font-weight:600;margin-bottom:6px;">Track qualitative reduction in requests related to reporting, long-term visibility, external analytics</div>
+        <div class="metric-desc">e.g. spreadsheet tracking, Notion-based systems, custom reporting workarounds. Preferred over export reduction, which is hard to attribute accurately.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CORE SIGNAL CALLOUT -->
+  <div class="callout purple">
+    <div class="callout-icon">🎯</div>
+    <div class="callout-content">
+      <h4>The strongest success signal</h4>
+      <p>This feature is not trying to improve workflow execution. It is trying to help enterprises organize, understand, and manage their automation portfolios through business context. Therefore the strongest signal is not error reduction or retention itself — it is Enterprise customers actively using Scenario Properties inside Analytics to create business-level views of their automation landscape.</p>
+    </div>
+  </div>
+
+  <div class="chart-wrapper" style="margin-top:40px;">
+    <div class="chart-title">Enterprise Maturity Curve — Where Make Stands Today</div>
+    <div class="chart-subtitle">Capability depth at each stage of automation program maturity</div>
+    <div style="height:280px;position:relative;">
+      <canvas id="maturityChart"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 ROADMAP ═══ -->
+<section id="roadmap" class="section">
+  <div class="section-label">12 — Roadmap</div>
+  <h2 class="section-title">Phased delivery,<br><span class="accent">immediate value</span></h2>
+  <p class="section-subtitle">Three focused phases. Each ships independently and builds on the previous without requiring rework. Phase 1 alone solves the most-voted customer pain point.</p>
+
+  <div class="timeline">
+
+    <!-- PHASE 1 -->
+    <div class="timeline-item">
+      <div class="timeline-dot phase1">1</div>
+      <div class="timeline-content">
+        <div class="timeline-phase">Phase 1 · 2 Sprints</div>
+        <div class="timeline-title">Subfolders — Hierarchical Organisation for Scenario Portfolios</div>
+        <div class="timeline-desc">Introduce a folder hierarchy (up to 5 nested levels) inside the Scenario List. Customers can create, rename, move, and delete folders. Scenarios can be assigned to a folder via drag-and-drop or bulk-edit. Folder structure is reflected in filtering and search across the Scenario List.</div>
+        <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">Core capabilities</div>
+        <div class="timeline-chips">
+          <span class="chip purple">Up to 5 nested levels</span>
+          <span class="chip purple">Create / rename / delete folders</span>
+          <span class="chip purple">Move &amp; bulk-assign scenarios</span>
+          <span class="chip purple">Drag-and-drop reordering</span>
+          <span class="chip purple">Folder-aware search &amp; filter</span>
+        </div>
+        <div style="margin:14px 0 0;padding:12px 14px;background:#F5F3FF;border-radius:8px;font-size:13px;color:var(--purple);">
+          <strong>Why first:</strong> Folder structure is the prerequisite for every downstream capability. Without a way to categorize scenarios by department, team, or business process, property-based filtering in the widget builder has nothing to group by. This ships first because it is the data model everything else depends on.
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="timeline-item">
+      <div class="timeline-dot phase2">2</div>
+      <div class="timeline-content">
+        <div class="timeline-phase" style="color:var(--blue);">Phase 2 · 4 Sprints</div>
+        <div class="timeline-title">Widget Builder — Custom Analytics Dashboard</div>
+        <div class="timeline-desc">Ship the custom widget builder inside Analytics. Admins and org owners compose dashboards from configurable widgets: KPI cards, bar charts, and line charts. Each widget is scoped by Scenario Property values (e.g., Department = Finance, Criticality = Critical) and by metric (operations, executions, error rate). Widgets can be freely positioned on the canvas, enabling genuinely custom layouts for executive reporting. Custom date range replaces the current 30-day cap.</div>
+        <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">Core capabilities</div>
+        <div class="timeline-chips">
+          <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:#BFDBFE;">KPI cards</span>
+          <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:#BFDBFE;">Bar charts</span>
+          <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:#BFDBFE;">Line charts</span>
+          <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:#BFDBFE;">Property-based filters &amp; dimensions</span>
+          <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:#BFDBFE;">Custom date range</span>
+          <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:#BFDBFE;">Free widget positioning on canvas</span>
+          <span class="chip" style="background:#EFF6FF;color:var(--blue);border-color:#BFDBFE;">Dashboard templates</span>
+        </div>
+        <div style="margin:14px 0 0;padding:12px 14px;background:#EFF6FF;border-radius:8px;font-size:13px;color:var(--blue);">
+          <strong>Dependency:</strong> Scenario Properties must exist and be populated for filter/dimension widgets to show business-level views. Phase 1's folder adoption accelerates property completion.
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="timeline-item">
+      <div class="timeline-dot phase3">3</div>
+      <div class="timeline-content">
+        <div class="timeline-phase" style="color:var(--green);">Phase 3 · 2 Sprints</div>
+        <div class="timeline-title">Dashboard Management — Multiple Dashboards &amp; Free Layout</div>
+        <div class="timeline-desc">Extend the dashboard model from a single customisable view to a full dashboard list per organisation. Admins can create, name, and manage multiple dashboards — each serving a different audience or business question (Reliability, Cost, Executive, Governance). Access roles control who can view or edit each dashboard, allowing organisations to share executive-facing views without exposing configuration to all users.</div>
+        <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">Core capabilities</div>
+        <div class="timeline-chips">
+          <span class="chip" style="background:#ECFDF5;color:var(--green);border-color:#A7F3D0;">Multiple dashboards per org</span>
+          <span class="chip" style="background:#ECFDF5;color:var(--green);border-color:#A7F3D0;">Dashboard list in org section</span>
+          <span class="chip" style="background:#ECFDF5;color:var(--green);border-color:#A7F3D0;">Access roles per dashboard</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ REFERENCES ═══ -->
+<section id="references" class="section">
+  <div class="section-label">Appendix — References</div>
+  <h2 class="section-title">Every claim,<br><span class="accent">traceable to a source</span></h2>
+  <p class="section-subtitle">All major claims in this case study are traceable to one of the following sources. Primary research was collected between 2022 and 2025.</p>
+
+  <div class="ref-item">
+    <div class="ref-title">Make Idea Exchange — "List of scenarios detailed usage dashboard with a longer history"</div>
+    <div class="ref-url"><a href="https://www.make.com/en/platform-ideas/p/list-of-scenarios-detailed-usage-dashboard-with-a-longer-history" target="_blank">https://www.make.com/en/platform-ideas/p/list-of-scenarios-detailed-usage-dashboard-with-a-longer-history</a></div>
+    <div class="ref-takeaway">220 votes, multi-year demand (2022–2026), status: Reviewed. Primary evidence for the reporting and visibility problem. Used to demonstrate community-scale validation of the problem, not to prescribe the solution.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Make Idea Exchange — "Subfolders for Scenario Organization"</div>
+    <div class="ref-url"><a href="https://www.make.com/en/platform-ideas/" target="_blank">https://www.make.com/en/platform-ideas/</a></div>
+    <div class="ref-takeaway">600+ votes. Enterprise teams require hierarchical structure to mirror their business organization. Naming conventions fail at 100+ scenarios — a consistent pattern in comments across this and related threads.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">G2 Reviews — Make (formerly Integromat)</div>
+    <div class="ref-url"><a href="https://www.g2.com/products/integromat-by-celonis-make/reviews" target="_blank">https://www.g2.com/products/integromat-by-celonis-make/reviews</a></div>
+    <div class="ref-takeaway">Average 4.6/5 (324 reviews). Recurring themes in critical reviews: analytics limitations, opaque error reporting, 30-day log retention locked behind enterprise tier. Enterprise segment reviews specifically cite organizational visibility gaps.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Capterra Reviews — Make</div>
+    <div class="ref-url"><a href="https://www.capterra.com/p/154278/Integromat/" target="_blank">https://www.capterra.com/p/154278/Integromat/</a></div>
+    <div class="ref-takeaway">Source of the "debugging of the scenario very limited" quote (Make Community thread cited via Capterra reference). Debugging visibility limitations noted across multiple reviews.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">GetApp Reviews — Make</div>
+    <div class="ref-url"><a href="https://www.getapp.com/it-management-software/a/integromat/" target="_blank">https://www.getapp.com/it-management-software/a/integromat/</a></div>
+    <div class="ref-takeaway">Average 4.8/5 (407 reviews). Summary confirms: "operations-based pricing can lead to unexpected expenses." Enterprise-segment reviewers note organizational visibility gaps and cost predictability concerns.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Make Community — Autosave &amp; Version Control threads</div>
+    <div class="ref-url"><a href="https://community.make.com/t/auto-saving-scenarios/75602" target="_blank">community.make.com/t/auto-saving-scenarios/75602</a> · <a href="https://community.make.com/t/why-is-there-not-an-autosave-feature-or-mode-and-it-times-out-and-erases-edits/36646" target="_blank">…/36646</a> · <a href="https://community.make.com/t/feature-request-version-control/2092" target="_blank">…/2092</a></div>
+    <div class="ref-takeaway">Real user quotes on lost work and version control needs, cited verbatim in Section 05. All threads are publicly accessible and dated 2022–2025.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Make Community — Auth &amp; Connector friction threads</div>
+    <div class="ref-url"><a href="https://community.make.com/t/creating-ms-teams-connection-with-non-admin-user/59651" target="_blank">community.make.com/t/creating-ms-teams-connection-with-non-admin-user/59651</a> · <a href="https://community.make.com/t/how-to-disable-data-logging-and-set-data-retention-to-1-day-for-the-entire-organization-pro-plan/101106" target="_blank">…/101106</a></div>
+    <div class="ref-takeaway">Source of the non-admin auth friction and data logging/debugging quotes cited in Section 05. Make officially confirmed the redirect URI documentation error in the MS Teams thread.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Gartner Magic Quadrant for Integration Platform as a Service</div>
+    <div class="ref-url"><a href="https://www.gartner.com/en/documents/magic-quadrant-integration-platform-service" target="_blank">https://www.gartner.com/en/documents/magic-quadrant-integration-platform-service</a></div>
+    <div class="ref-takeaway">Identifies "business process orchestration" and "enterprise governance" as fastest-growing evaluation criteria in iPaaS buying decisions. Vendors rated on portfolio management capabilities are advancing. Used to support the Market Shift section's claim about iPaaS evolving to control planes.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Forrester Wave — Enterprise Integration Platforms</div>
+    <div class="ref-url"><a href="https://www.forrester.com/report/the-forrester-wave-enterprise-integration-platforms/" target="_blank">https://www.forrester.com/report/the-forrester-wave-enterprise-integration-platforms/</a></div>
+    <div class="ref-takeaway">Notes that enterprise buyers increasingly require automation platforms to support operational visibility and accountability functions alongside workflow building. Distinguishes "citizen integrator" tools from "enterprise automation platforms" on governance criteria.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Make Enterprise Page</div>
+    <div class="ref-url"><a href="https://www.make.com/en/enterprise" target="_blank">https://www.make.com/en/enterprise</a></div>
+    <div class="ref-takeaway">Documents current enterprise capabilities including SSO, Audit Logs, Teams, Make Grid, and enterprise security. Used to establish the strong foundation already in place and frame the gap as additive rather than foundational.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Make Analytics Dashboard Documentation</div>
+    <div class="ref-url"><a href="https://help.make.com/analytics-dashboard" target="_blank">https://help.make.com/analytics-dashboard</a></div>
+    <div class="ref-takeaway">Confirms current Analytics capabilities: filters by status, team, folder only; no custom dimensions; columns include operations, executions, errors, error rate, team, folder. No support for filtering by Scenario Properties. Used to document the current state in the Gap Analysis section.</div>
+  </div>
+
+  <div class="ref-item">
+    <div class="ref-title">Make Custom Scenario Properties Documentation</div>
+    <div class="ref-url"><a href="https://help.make.com/custom-scenario-properties" target="_blank">https://help.make.com/custom-scenario-properties</a></div>
+    <div class="ref-takeaway">Confirms that enterprise customers can define and populate custom properties including text, number, date, and select types. Properties can be filtered and sorted in the Scenario List but do not integrate with Analytics. This is the critical "capability exists, connection missing" finding.</div>
+  </div>
+</section>
+
+<!-- ═══ CLOSING ═══ -->
+<section id="closing" style="background:linear-gradient(135deg,#0F0614 0%,#1E0A4C 50%,#0F0F11 100%);color:white;text-align:center;padding:120px 80px;border-bottom:none;">
+  <div style="max-width:720px;margin:0 auto;">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(108,43,217,.25);border:1px solid rgba(139,92,246,.35);padding:6px 14px;border-radius:100px;font-size:12px;font-weight:600;color:#A78BFA;letter-spacing:.05em;text-transform:uppercase;margin-bottom:32px;">
+      Closing Argument
+    </div>
+    <h2 style="font-size:clamp(28px,4vw,46px);font-weight:800;letter-spacing:-.025em;line-height:1.2;color:white;margin-bottom:28px;">
+      The problem is not that enterprises cannot <span style="color:#A78BFA;">build</span> automations in Make.<br><br>
+      The problem is that once they build hundreds of them, they lack a way to <span style="color:#A78BFA;">understand</span> them through the lens of their business.
+    </h2>
+    <p style="font-size:18px;color:rgba(255,255,255,.65);line-height:1.75;margin-bottom:48px;">
+      <strong style="color:rgba(255,255,255,.9);">Enterprise Automation Control Plane</strong> solves that gap by turning existing business metadata — already defined, already populated, already trusted by the organization — into actionable portfolio visibility.<br><br>
+      The investment is manageable. The leverage is enormous. The timing is now.
+    </p>
+    <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+      <div style="background:rgba(108,43,217,.2);border:1px solid rgba(139,92,246,.3);border-radius:var(--radius-lg);padding:20px 28px;text-align:center;">
+        <div style="font-size:28px;font-weight:800;color:white;letter-spacing:-.02em;">2</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;">new core capabilities</div>
+      </div>
+      <div style="background:rgba(108,43,217,.2);border:1px solid rgba(139,92,246,.3);border-radius:var(--radius-lg);padding:20px 28px;text-align:center;">
+        <div style="font-size:28px;font-weight:800;color:white;letter-spacing:-.02em;">July 2026</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;">Phase 1 target</div>
+      </div>
+      <div style="background:rgba(108,43,217,.2);border:1px solid rgba(139,92,246,.3);border-radius:var(--radius-lg);padding:20px 28px;text-align:center;">
+        <div style="font-size:28px;font-weight:800;color:white;letter-spacing:-.02em;">∞</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;">dashboards customers create</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ─── CHART: Coded Make Quote Analysis ───
+const ctx = document.getElementById('requestChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: [
+      'Debugging, observability\n& root-cause analysis',
+      'Change management,\nversioning & safe editing',
+      'Connector, auth\n& setup friction',
+      'Pricing\npredictability'
+    ],
+    datasets: [{
+      label: 'Share of coded quotes',
+      data: [38, 31, 23, 8],
+      backgroundColor: [
+        'rgba(108,43,217,0.85)',
+        'rgba(108,43,217,0.70)',
+        'rgba(108,43,217,0.55)',
+        'rgba(108,43,217,0.35)',
+      ],
+      borderWidth: 0,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => ` ${c.raw}% of coded quotes` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 12 }, color: '#9CA3AF' } },
+      y: {
+        grid: { color: '#F3F4F6' },
+        ticks: { font: { family: 'Inter', size: 12 }, color: '#9CA3AF', callback: v => v + '%' },
+        max: 50, beginAtZero: true
+      }
+    }
+  }
+});
+
+// ─── CHART: Widget Builder Preview ───
+const previewCtx = document.getElementById('previewChart');
+if (previewCtx) {
+  new Chart(previewCtx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Finance', 'Marketing', 'Operations', 'IT', 'People', 'Sales'],
+      datasets: [{
+        label: 'Executions (12M)',
+        data: [24811, 18540, 31200, 9870, 6430, 22100],
+        backgroundColor: 'rgba(108,43,217,0.80)',
+        borderRadius: 6,
+        borderWidth: 0,
+        barPercentage: 0.85,
+        categoryPercentage: 0.9,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { left: 0, right: 0, top: 8, bottom: 0 } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw.toLocaleString()} executions` } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 }, color: '#9CA3AF' } },
+        y: { grid: { color: '#F3F4F6' }, ticks: { font: { family: 'Inter', size: 11 }, color: '#9CA3AF', callback: v => v.toLocaleString() } }
+      }
+    }
+  });
+}
+
+// ─── CHART: Enterprise Maturity Curve ───
+const matCtx = document.getElementById('maturityChart');
+if (matCtx) {
+  new Chart(matCtx.getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Scenario Building', 'Connector Breadth', 'Team Collaboration', 'Security & Compliance', 'Portfolio Visibility', 'Governance & Reporting'],
+      datasets: [
+        {
+          label: 'Make Today',
+          data: [98, 95, 80, 88, 28, 22],
+          backgroundColor: 'rgba(108,43,217,0.12)',
+          borderColor: 'rgba(108,43,217,0.8)',
+          borderWidth: 2,
+          pointBackgroundColor: 'rgba(108,43,217,1)',
+          pointRadius: 4,
+        },
+        {
+          label: 'With Control Plane',
+          data: [98, 95, 80, 88, 82, 78],
+          backgroundColor: 'rgba(16,185,129,0.08)',
+          borderColor: 'rgba(16,185,129,0.7)',
+          borderWidth: 2,
+          borderDash: [5,3],
+          pointBackgroundColor: 'rgba(16,185,129,1)',
+          pointRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 12 }, padding: 20 } }
+      },
+      scales: {
+        r: {
+          beginAtZero: true, max: 100,
+          ticks: { stepSize: 25, font: { family: 'Inter', size: 11 }, color: '#9CA3AF' },
+          grid: { color: '#E5E7EB' },
+          pointLabels: { font: { family: 'Inter', size: 12 }, color: '#374151' }
+        }
+      }
+    }
+  });
+}
+
+// ─── DASHBOARD CHARTS ───
+const dashDefaults = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+};
+const dashBar = (labels, data, color) => ({
+  type: 'bar',
+  data: { labels, datasets: [{ data, backgroundColor: color || 'rgba(108,43,217,0.78)', borderRadius: 4, borderWidth: 0, barPercentage: 0.72, categoryPercentage: 0.85 }] },
+  options: { ...dashDefaults, scales: {
+    x: { grid: { display: false }, ticks: { font: { family:'Inter', size:10 }, color:'#9CA3AF' } },
+    y: { grid: { color:'#F3F4F6' }, ticks: { font: { family:'Inter', size:10 }, color:'#9CA3AF', callback: v => v >= 1000 ? (v/1000)+'K' : v } }
+  }}
+});
+
+// Reliability: Error Rate by Criticality
+const relCrit = document.getElementById('relCritChart');
+if(relCrit) new Chart(relCrit, dashBar(['Critical','High','Medium','Low'], [4.2, 1.8, 0.3, 0.1], ['rgba(239,68,68,.8)','rgba(245,158,11,.8)','rgba(59,130,246,.7)','rgba(16,185,129,.7)']));
+
+// Reliability: Failed executions by Department
+const relDept = document.getElementById('relDeptChart');
+if(relDept) new Chart(relDept, dashBar(['Finance','Marketing','Ops','IT','HR'], [891, 143, 56, 14, 0], 'rgba(239,68,68,.72)'));
+
+// Cost: Operations by Department
+const costDept = document.getElementById('costDeptChart');
+if(costDept) new Chart(costDept, dashBar(['Finance','Ops','Sales','Marketing','IT','HR'], [312480, 198760, 156320, 89400, 48000, 21000]));
+
+// Cost: Usage Trend (line)
+const costTrend = document.getElementById('costTrendChart');
+if(costTrend) new Chart(costTrend, {
+  type: 'line',
+  data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [{ data: [72000,79000,85000,88000,91000,98000,104000,112000,118000,124000,132000,140000],
+      borderColor:'rgba(108,43,217,.9)', backgroundColor:'rgba(108,43,217,.08)', fill:true, tension:0.4, borderWidth:2, pointRadius:0 }] },
+  options: { ...dashDefaults, scales: {
+    x: { grid:{display:false}, ticks:{font:{family:'Inter',size:10},color:'#9CA3AF'} },
+    y: { grid:{color:'#F3F4F6'}, ticks:{font:{family:'Inter',size:10},color:'#9CA3AF', callback: v => (v/1000)+'K'} }
+  }}
+});
+
+// Governance: Automations by Department
+const govDept = document.getElementById('govDeptChart');
+if(govDept) new Chart(govDept, dashBar(['Ops','Finance','IT','Marketing','HR','Sales'], [68, 52, 44, 38, 24, 21]));
+
+// Executive: Automation Growth
+const execGrowth = document.getElementById('execGrowthChart');
+if(execGrowth) new Chart(execGrowth, {
+  type: 'line',
+  data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
+    datasets: [{ data: [184,193,198,205,211,218,224,229,235,240,247],
+      borderColor:'rgba(108,43,217,.9)', backgroundColor:'rgba(108,43,217,.08)', fill:true, tension:0.35, borderWidth:2, pointRadius:0 }] },
+  options: { ...dashDefaults, scales: {
+    x: { grid:{display:false}, ticks:{font:{family:'Inter',size:10},color:'#9CA3AF'} },
+    y: { grid:{color:'#F3F4F6'}, ticks:{font:{family:'Inter',size:10},color:'#9CA3AF'}, min:170 }
+  }}
+});
+
+// Executive: Error Rate Trend
+const execError = document.getElementById('execErrorChart');
+if(execError) new Chart(execError, {
+  type: 'line',
+  data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
+    datasets: [{ data: [3.4,3.1,3.6,3.0,2.8,2.7,2.6,2.4,2.3,2.2,2.1],
+      borderColor:'rgba(245,158,11,.9)', backgroundColor:'rgba(245,158,11,.08)', fill:true, tension:0.35, borderWidth:2, pointRadius:0 }] },
+  options: { ...dashDefaults, scales: {
+    x: { grid:{display:false}, ticks:{font:{family:'Inter',size:10},color:'#9CA3AF'} },
+    y: { grid:{color:'#F3F4F6'}, ticks:{font:{family:'Inter',size:10},color:'#9CA3AF', callback: v => v+'%'} }
+  }}
+});
+
+// ROI: Hours Saved by Department
+const roiHours = document.getElementById('roiHoursChart');
+if(roiHours) new Chart(roiHours, dashBar(['Finance','Ops','Sales','Marketing','IT'], [4820, 3960, 2640, 2100, 1300], 'rgba(16,185,129,.78)'));
+
+// ROI: Revenue Impact by Business Process
+const roiRev = document.getElementById('roiRevenueChart');
+if(roiRev) new Chart(roiRev, dashBar(['Order Mgmt','Finance Ops','Lead Gen','Reporting','HR Ops'], [1820000, 1240000, 890000, 480000, 300000], 'rgba(16,185,129,.78)'));
+
+// ─── SIDEBAR ACTIVE STATE ───
+const sections = document.querySelectorAll('section[id]');
+const navItems = document.querySelectorAll('.nav-item');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navItems.forEach(item => item.classList.remove('active'));
+      const active = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { threshold: 0.25 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
